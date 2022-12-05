@@ -189,6 +189,8 @@ The most relevant files for MIC are:
   Definition of the experiment configurations in the paper.
 * [mmseg/models/uda/masking_consistency_module.py](mmseg/models/uda/masking_consistency_module.py):
   Implementation of MIC.
+* [mmseg/models/utils/masking_transforms.py](mmseg/models/utils/masking_transforms.py):
+  Implementation of the image patch masking.
 * [mmseg/models/uda/dacs.py](mmseg/models/uda/dacs.py):
   Implementation of the DAFormer/HRDA self-training with integrated MaskingConsistencyModule
 
