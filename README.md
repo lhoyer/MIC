@@ -6,8 +6,8 @@
 [Haoran Wang](https://krumo.github.io/), and
 [Luc Van Gool](https://scholar.google.de/citations?user=TwMib_QAAAAJ&hl=en)**
 
-**[[Arxiv]](TODO)**
-**[[Paper]](TODO)**
+**[[Arxiv]](https://arxiv.org/abs/2212.01322)**
+**[[Paper]](https://arxiv.org/pdf/2212.01322)**
 
 ## Overview
 
@@ -46,7 +46,7 @@ as shown below.
 ![Color Palette](seg/resources/color_palette.png)
 
 For more information on MIC, please check our
-[[Paper]](TODO).
+[[Paper]](https://arxiv.org/pdf/2212.01322).
 
 If you find MIC useful in your research, please consider citing:
 
@@ -54,7 +54,7 @@ If you find MIC useful in your research, please consider citing:
 @Article{hoyer2022mic,
   title={{MIC}: Masked Image Consistency for Context-Enhanced Domain Adaptation},
   author={Hoyer, Lukas and Dai, Dengxin and Wang, Haoran and Van Gool, Luc},
-  journal={arXiv preprint arXiv:TODO},
+  journal={arXiv preprint arXiv:2212.01322},
   year={2022}
 }
 ```
