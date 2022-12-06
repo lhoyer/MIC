@@ -76,7 +76,7 @@ if __name__ == '__main__':
         os.makedirs(os.path.dirname(cfg_out_file), exist_ok=True)
         assert not os.path.isfile(cfg_out_file)
         with open(cfg_out_file, 'w') as f:
-            f.write(child_cfg.pretty_text)
+            f.write(Config(child_cfg).pretty_text)
         # Json files do not distinguish tuples and lists, which is
         # necessary for Resize.img_scale.
         # with open(cfg_out_file, 'w') as of:
