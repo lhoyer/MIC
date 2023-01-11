@@ -2,6 +2,8 @@
 
 ## Environment Setup
 
+First, please install cuda version 11.0.3 available at [https://developer.nvidia.com/cuda-11-0-3-download-archive](https://developer.nvidia.com/cuda-11-0-3-download-archive). It is required to build mmcv-full later.
+
 For this project, we used python 3.8.5. We recommend setting up a new virtual
 environment:
 
