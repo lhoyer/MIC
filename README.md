@@ -9,6 +9,8 @@
 **[[Arxiv]](https://arxiv.org/abs/2212.01322)**
 **[[Paper]](https://arxiv.org/pdf/2212.01322)**
 
+:bell: We are happy to announce that MIC was accepted at **CVPR23**. :bell:
+
 ## Overview
 
  In unsupervised domain adaptation (UDA), a model trained on source data (e.g. synthetic)
@@ -51,11 +53,11 @@ For more information on MIC, please check our
 If you find MIC useful in your research, please consider citing:
 
 ```
-@Article{hoyer2022mic,
+@InProceedings{hoyer2023mic,
   title={{MIC}: Masked Image Consistency for Context-Enhanced Domain Adaptation},
   author={Hoyer, Lukas and Dai, Dengxin and Wang, Haoran and Van Gool, Luc},
-  journal={arXiv preprint arXiv:2212.01322},
-  year={2022}
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year={2023}
 }
 ```
 
