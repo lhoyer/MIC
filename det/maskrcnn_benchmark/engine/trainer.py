@@ -211,7 +211,7 @@ def do_mask_da_train(
     cfg,
     checkpointer_teacher
 ):
-    from maskrcnn_benchmark.structures.image_list import to_image_list
+    from maskrcnn_benchmark.structures.image_list import ImageList
     logger = logging.getLogger("maskrcnn_benchmark.trainer")
     logger.info("Start training")
     logger.info("with_MIC: On")
@@ -228,8 +228,8 @@ def do_mask_da_train(
 
         source_images = source_images.to(device)
         target_images = target_images.to(device)
-        images = source_images+target_images
-        targets = [target.to(device) for target in list(source_targets+target_targets)]
+        images = source_images + target_images
+        targets = [target.to(device) for target in list(source_targets + target_targets)]
 
         # generate pseudo labels for masked target image
         masked_target_images = masking(target_images.tensors.clone().detach()).detach()
@@ -241,7 +241,7 @@ def do_mask_da_train(
 
         # apply pseudo label on masked images
         if len(target_pseudo_labels)>0:
-            masked_images = masked_target_images[pseudo_masks]
+            masked_images = ImageList(masked_target_images[pseudo_masks], target_images.image_sizes)
             masked_taget = target_pseudo_labels
             masked_loss_dict = model(masked_images, masked_taget, use_pseudo_labeling_weight=cfg.MODEL.PSEUDO_LABEL_WEIGHT, with_DA_ON=False)
             
