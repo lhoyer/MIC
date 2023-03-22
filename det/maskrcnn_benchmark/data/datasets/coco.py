@@ -73,16 +73,16 @@ class COCODataset(torchvision.datasets.coco.CocoDetection):
         # TODO might be better to add an extra field
         anno = [obj for obj in anno if obj["iscrowd"] == 0]
 
-        boxes = [obj["bbox"] for obj in anno]
+        boxes = [obj["bbox"] for obj in anno] if self.is_source else [[0, 0, img.size[0]-1, img.size[1]-1]]
         boxes = torch.as_tensor(boxes).reshape(-1, 4)  # guard against no boxes
         target = BoxList(boxes, img.size, mode="xywh").convert("xyxy")
 
-        classes = [obj["category_id"] for obj in anno]
+        classes = [obj["category_id"] for obj in anno] if self.is_source else [self.contiguous_category_id_to_json_id[1]]
         classes = [self.json_category_id_to_contiguous_id[c] for c in classes]
         classes = torch.tensor(classes)
         target.add_field("labels", classes)
 
-        masks = [obj["segmentation"] for obj in anno]
+        masks = [obj["segmentation"] for obj in anno] if self.is_source else [[[0, 0, 0, img.size[1]-1, img.size[0]-1, img.size[1]-1, img.size[0]-1, 0]]]
         masks = SegmentationMask(masks, img.size)
         target.add_field("masks", masks)
 
@@ -90,7 +90,10 @@ class COCODataset(torchvision.datasets.coco.CocoDetection):
         target.add_field("is_source", domain_labels)
 
         if anno and "keypoints" in anno[0]:
-            keypoints = [obj["keypoints"] for obj in anno]
+            if self.is_source:
+                keypoints = [obj["keypoints"] for obj in anno]
+            else:
+                raise NotImplementedError
             keypoints = PersonKeypoints(keypoints, img.size)
             target.add_field("keypoints", keypoints)
 
