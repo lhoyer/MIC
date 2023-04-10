@@ -53,7 +53,8 @@ To run [convert_cityscapes_to_coco.py](tools/cityscapes/convert_cityscapes_to_co
 
 ```bash
 # copy required file to cityscapesScripts toolkit
-cp tool/cityscapes/instances2dict_with_polygons.py $INSTALL_DIR/cityscapesScripts/evaluation
+cp tools/cityscapes/instances2dict_with_polygons.py 
+$INSTALL_DIR/cityscapesScripts/cityscapesscripts/evaluation
 
 # recompile cityscapesScripts
 cd cityscapesScripts/
