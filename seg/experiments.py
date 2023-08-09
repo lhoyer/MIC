@@ -365,12 +365,12 @@ def generate_experiment_cfgs(id):
     # Set some defaults
     # -------------------------------------------------------------------------
     cfgs = []
-    n_gpus = 1
-    batch_size = 2
+    n_gpus = 2
+    batch_size = 4
     iters = 40000
     opt, lr, schedule, pmult = 'adamw', 0.00006, 'poly10warm', True
     crop = '512x512'
-    gpu_model = 'NVIDIAGeForceRTX2080Ti'
+    gpu_model = 'NVIDIAA100'
     datasets = [
         ('gta', 'cityscapes'),
     ]
@@ -438,6 +438,7 @@ def generate_experiment_cfgs(id):
             if 'hrda' in architecture:
                 source, target, crop = 'gtaHR', 'cityscapesHR', '1024x1024'
                 rcs_min_crop = 0.5 * (2 ** 2)
+                
                 gpu_model = 'NVIDIATITANRTX'
                 inference = 'slide'
                 mask_block_size = 64

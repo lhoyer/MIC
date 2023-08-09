@@ -107,12 +107,7 @@ data
 .vscode
 .idea
 
-# custom
-*.pkl
-*.pkl.json
-*.log.json
-work_dirs/
-mmseg/.mim
+
 
 # Pytorch
 *.pth
@@ -124,3 +119,10 @@ configs/generated/
 *.pdf
 *.pgf
 visualization/*.png
+
+# custom
+*.pkl
+*.pkl.json
+*.log.json
+work_dirs/
+mmseg/.mim

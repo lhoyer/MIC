@@ -10,6 +10,7 @@
 import argparse
 import logging
 import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "2,3"
 import subprocess
 import uuid
 from datetime import datetime

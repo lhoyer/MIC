@@ -92,7 +92,7 @@ optimizer = dict(
             head=dict(lr_mult=10.0),
             pos_block=dict(decay_mult=0.0),
             norm=dict(decay_mult=0.0))))
-n_gpus = 1
+n_gpus = 2
 gpu_model = 'NVIDIATITANRTX'
 runner = dict(type='IterBasedRunner', max_iters=40000)
 # Logging Configuration
