@@ -9,7 +9,10 @@
 **[[Arxiv]](https://arxiv.org/abs/2212.01322)**
 **[[Paper]](https://arxiv.org/pdf/2212.01322)**
 
-:bell: We are happy to announce that MIC was accepted at **CVPR23**. :bell:
+:bell: **News:**
+
+* [2023-08-25] We are happy to announce that our work [EDAPS](https://github.com/susaha/edaps) on panoptic segmentation UDA was accepted at **ICCV23**.
+* [2023-02-28] We are happy to announce that MIC was accepted at **CVPR23**.
 
 ## Overview
 
