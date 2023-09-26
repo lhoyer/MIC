@@ -11,6 +11,7 @@
 
 :bell: **News:**
 
+* [2023-09-26] We are happy to announce that our [DAFormer/HRDA Extension](https://arxiv.org/pdf/2304.13615.pdf) on domain generalization and clear-to-adverse-weather UDA was accapted at **PAMI**. 
 * [2023-08-25] We are happy to announce that our work [EDAPS](https://github.com/susaha/edaps) on panoptic segmentation UDA was accepted at **ICCV23**.
 * [2023-02-28] We are happy to announce that MIC was accepted at **CVPR23**.
 
