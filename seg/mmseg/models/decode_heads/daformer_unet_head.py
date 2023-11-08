@@ -15,6 +15,7 @@ from .aspp_head import ASPPModule
 from .decode_head import BaseDecodeHead
 from .segformer_head import MLP
 from .sep_aspp_head import DepthwiseSeparableASPPModule
+import torch.nn.functional as F
 
 
 class ASPPWrapper(nn.Module):
@@ -120,12 +121,77 @@ def build_layer(in_channels, out_channels, type, **kwargs):
     else:
         raise NotImplementedError(type)
 
+class DoubleConv(nn.Module):
+    """(convolution => [BN] => ReLU) * 2"""
+
+    def __init__(self, in_channels, out_channels, mid_channels=None, norm_layer='BN'):
+        super().__init__()
+
+        if norm_layer == 'IN':
+            norm_layer = nn.InstanceNorm2d
+        elif norm_layer == 'BN':
+            norm_layer = nn.BatchNorm2d
+        else:
+            raise NotImplementedError
+
+        if not mid_channels:
+            mid_channels = out_channels
+        self.double_conv = nn.Sequential(
+            nn.Conv2d(in_channels, mid_channels, kernel_size=3, padding=1),
+            norm_layer(mid_channels),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(mid_channels, out_channels, kernel_size=3, padding=1),
+            norm_layer(out_channels),
+            nn.ReLU(inplace=True)
+        )
+
+    def forward(self, x):
+        return self.double_conv(x)
+    
+
+class Up(nn.Module):
+    """Upscaling then double conv"""
+
+    def __init__(self, in_channels, out_channels, mid_channels, norm_layer, bilinear=True):
+        super().__init__()
+
+        # if bilinear, use the normal convolutions to reduce the number of channels
+        if bilinear:
+            self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+            self.conv = DoubleConv(mid_channels, out_channels, in_channels // 2, norm_layer=norm_layer)
+        else:
+            self.up = nn.ConvTranspose2d(in_channels , in_channels // 2, kernel_size=2, stride=2)
+            self.conv = DoubleConv(mid_channels, out_channels, norm_layer=norm_layer)
+
+    def forward(self, x1, x2):
+        x1 = self.up(x1)
+
+        # input is CHW
+        diffY = x2.size()[2] - x1.size()[2]
+        diffX = x2.size()[3] - x1.size()[3]
+
+        x1 = F.pad(x1, [diffX // 2, diffX - diffX // 2,
+                        diffY // 2, diffY - diffY // 2])
+        # if you have padding issues, see
+        # https://github.com/HaiyongJiang/U-Net-Pytorch-Unstructured-Buggy/commit/0e854509c2cea854e247a9c615f175f76fbb2e3a
+        # https://github.com/xiaopeng-liao/Pytorch-UNet/commit/8ebac70e633bac59fc22bb5195e513d5832fb3bd
+        x = torch.cat([x2, x1], dim=1)
+        return self.conv(x)
+
+
+class OutConv(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super(OutConv, self).__init__()
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=1)
+
+    def forward(self, x):
+        return self.conv(x)
 
 @HEADS.register_module()
-class DAFormerHead(BaseDecodeHead):
+class DAFormerUNetHead(BaseDecodeHead):
 
     def __init__(self, **kwargs):
-        super(DAFormerHead, self).__init__(
+        super(DAFormerUNetHead, self).__init__(
             input_transform='multiple_select', **kwargs)
 
         assert not self.align_corners
@@ -153,8 +219,22 @@ class DAFormerHead(BaseDecodeHead):
                     in_channels, embed_dim, **embed_cfg)
         self.embed_layers = nn.ModuleDict(self.embed_layers)
 
-        self.fuse_layer = build_layer(
-            sum(embed_dims), self.channels, **fusion_cfg)
+        # self.fuse_layer = build_layer(
+        #     sum(embed_dims), self.channels, **fusion_cfg)
+
+        bilinear = False
+        factor = 2 if bilinear else 1
+        norm_layer = 'BN'
+        layers = [16, 64, 128, 320, 512]
+        out_layers = [16, 256, 128, 320, 512]
+        up = []
+        for i in range(4):
+            up.append(Up(layers[i+1], 
+                              out_layers[i] // factor, 
+                              layers[i+1]//2 + layers[i], 
+                              norm_layer, bilinear
+                              ).cuda())
+        self.fuse_layer = nn.Sequential(*up)
 
     def forward(self, inputs):
         x = inputs
@@ -165,21 +245,17 @@ class DAFormerHead(BaseDecodeHead):
 
         os_size = x[0].size()[2:]
         _c = {}
-        for i in self.in_index:
+        x_in = x[3]
+        for i in range(3, 0, -1):
             # mmcv.print_log(f'{i}: {x[i].shape}', 'mmseg')
-            _c[i] = self.embed_layers[str(i)](x[i])
+            _c[i] = self.fuse_layer[i](x_in, x[i-1])
             if _c[i].dim() == 3:
                 _c[i] = _c[i].permute(0, 2, 1).contiguous()\
                     .reshape(n, -1, x[i].shape[2], x[i].shape[3])
             # mmcv.print_log(f'_c{i}: {_c[i].shape}', 'mmseg')
-            if _c[i].size()[2:] != os_size:
-                # mmcv.print_log(f'resize {i}', 'mmseg')
-                _c[i] = resize(
-                    _c[i],
-                    size=os_size,
-                    mode='bilinear',
-                    align_corners=self.align_corners)
+            x_in = _c[i]
 
-        x = self.fuse_layer(torch.cat(list(_c.values()), dim=1))
-        x = self.cls_seg(x)
+        # x = self.fuse_layer(torch.cat(list(_c.values()), dim=1))
+        # print(f'x: {x.shape}', 'fused')
+        x = self.cls_seg(x_in)
         return x

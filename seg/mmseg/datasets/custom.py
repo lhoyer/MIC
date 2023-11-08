@@ -360,6 +360,11 @@ class CustomDataset(Dataset):
             for ret_metric, ret_metric_value in ret_metrics.items()
         })
 
+        ret_metrics_summary_foreground = OrderedDict({
+            ret_metric: np.round(np.nanmean(ret_metric_value[1:]) * 100, 2)
+            for ret_metric, ret_metric_value in ret_metrics.items() if ret_metric != 'aAcc'
+        })
+
         # each class table
         ret_metrics.pop('aAcc', None)
         ret_metrics_class = OrderedDict({
@@ -381,10 +386,19 @@ class CustomDataset(Dataset):
             else:
                 summary_table_data.add_column('m' + key, [val])
 
+        summary_table_data_foreground = PrettyTable()
+        for key, val in ret_metrics_summary_foreground.items():
+            if key == 'aAcc':
+                summary_table_data_foreground.add_column(key, [val])
+            else:
+                summary_table_data_foreground.add_column('m' + key, [val])
+
         print_log('per class results:', logger)
         print_log('\n' + class_table_data.get_string(), logger=logger)
         print_log('Summary:', logger)
         print_log('\n' + summary_table_data.get_string(), logger=logger)
+        print_log('Summary foreground:', logger)
+        print_log('\n' + summary_table_data_foreground.get_string(), logger=logger)
 
         # each metric dict
         for key, value in ret_metrics_summary.items():
@@ -392,6 +406,12 @@ class CustomDataset(Dataset):
                 eval_results[key] = value / 100.0
             else:
                 eval_results['m' + key] = value / 100.0
+        
+        for key, value in ret_metrics_summary_foreground.items():
+            if key == 'aAcc':
+                eval_results[key + '-foreground'] = value / 100.0
+            else:
+                eval_results['m' + key + '-foreground'] = value / 100.0
 
         ret_metrics_class.pop('Class', None)
         for key, value in ret_metrics_class.items():

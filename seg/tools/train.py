@@ -23,7 +23,8 @@ from mmseg.datasets import build_dataset
 from mmseg.models.builder import build_train_model
 from mmseg.utils import collect_env, get_root_logger
 from mmseg.utils.collect_env import gen_code_archive
-
+import wandb
+import pprint
 
 def parse_args(args):
     parser = argparse.ArgumentParser(description='Train a segmentor')
@@ -162,10 +163,21 @@ def main(args):
             config=cfg.pretty_text,
             CLASSES=datasets[0].CLASSES,
             PALETTE=datasets[0].PALETTE)
+
     # add an attribute for visualization convenience
     model.CLASSES = datasets[0].CLASSES
     # passing checkpoint meta for saving best checkpoint
     meta.update(cfg.checkpoint_config.meta)
+
+    dict_cfg = dict(cfg)
+    wandb_taks_name = dict_cfg['work_dir'].split('/')[-1]
+
+    project_name = 'MIC'
+    if 'debug' in dict_cfg['name']:
+        project_name = 'MIC-debug'        
+    run = wandb.init(project=project_name, config=cfg, name=wandb_taks_name, 
+                     dir=dict_cfg['work_dir'])
+
     train_segmentor(
         model,
         datasets,
@@ -174,6 +186,8 @@ def main(args):
         validate=(not args.no_validate),
         timestamp=timestamp,
         meta=meta)
+    
+    wandb.finish()
 
 
 if __name__ == '__main__':

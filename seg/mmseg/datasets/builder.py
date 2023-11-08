@@ -143,6 +143,13 @@ def build_dataloader(dataset,
         worker_init_fn, num_workers=num_workers, rank=rank,
         seed=seed) if seed is not None else None
 
+    # print(dataset[0]['img'].size())
+    # print(dataset[0]['target_img'].size())
+    # print(dataset[0]['gt_semantic_seg'])
+    # print(dataset[0]['gt_semantic_seg'].size())
+    # print(dataset[0].keys())
+    # quit()
+
     if torch.__version__ >= '1.8.0':
         data_loader = DataLoader(
             dataset,

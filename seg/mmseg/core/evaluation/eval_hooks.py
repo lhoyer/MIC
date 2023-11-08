@@ -20,7 +20,6 @@ class EvalHook(_EvalHook):
     Returns:
         list: The prediction results.
     """
-
     greater_keys = ['mIoU', 'mAcc', 'aAcc']
 
     def __init__(self, *args, by_epoch=False, efficient_test=False, **kwargs):
@@ -31,15 +30,17 @@ class EvalHook(_EvalHook):
         """perform evaluation and save ckpt."""
         if not self._should_evaluate(runner):
             return
-
+        
         from mmseg.apis import single_gpu_test
         results = single_gpu_test(
             runner.model,
             self.dataloader,
             show=False,
             efficient_test=self.efficient_test)
+
         runner.log_buffer.output['eval_iter_num'] = len(self.dataloader)
         key_score = self.evaluate(runner, results)
+
         if self.save_best:
             self._save_ckpt(runner, key_score)
 
@@ -70,6 +71,7 @@ class DistEvalHook(_DistEvalHook):
         # which may cause the inconsistent performance of models in
         # different ranks, so we broadcast BatchNorm's buffers
         # of rank 0 to other ranks to avoid this.
+
         if self.broadcast_bn_buffer:
             model = runner.model
             for name, module in model.named_modules():

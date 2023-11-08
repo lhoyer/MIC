@@ -19,6 +19,7 @@ from experiments import generate_experiment_cfgs
 from mmcv import Config, get_git_hash
 from tools import train
 
+PATH='/usr/bmicnas02/data-biwi-01/klanna_data/results/MIC/'
 
 def run_command(command):
     p = subprocess.Popen(
@@ -69,7 +70,7 @@ if __name__ == '__main__':
         child_cfg = {
             '_base_': args.config.replace('configs', '../..'),
             'name': unique_name,
-            'work_dir': os.path.join('work_dirs', exp_name, unique_name),
+            'work_dir': os.path.join(PATH, 'work_dirs', exp_name, unique_name),
             'git_rev': get_git_hash()
         }
         cfg_out_file = f"{GEN_CONFIG_DIR}/{exp_name}/{child_cfg['name']}.py"

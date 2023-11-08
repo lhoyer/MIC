@@ -100,6 +100,7 @@ class EncoderDecoder(BaseSegmentor):
         map of the same size as input."""
         x = self.extract_feat(img)
         out = self._decode_head_forward_test(x, img_metas)
+        
         if upscale_pred:
             out = resize(
                 input=out,

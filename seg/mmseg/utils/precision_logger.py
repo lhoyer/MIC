@@ -137,6 +137,7 @@ class PrecisionLoggerHook(LoggerHook):
 
             # by epoch: Epoch [4][100/1000]
             # by iter:  Iter [100/100000]
+            
             if self.by_epoch:
                 log_str = f'Epoch [{log_dict["epoch"]}]' \
                           f'[{log_dict["iter"]}/{len(runner.data_loader)}]\t'

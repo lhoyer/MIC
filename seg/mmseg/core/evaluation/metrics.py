@@ -320,6 +320,7 @@ def eval_metrics(results,
         metric: value.numpy()
         for metric, value in ret_metrics.items()
     }
+
     if nan_to_num is not None:
         ret_metrics = OrderedDict({
             metric: np.nan_to_num(metric_value, nan=nan_to_num)
