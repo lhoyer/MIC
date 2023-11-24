@@ -7,11 +7,11 @@
 _base_ = [
     '../_base_/default_runtime.py',
     # DAFormer Network Architecture
-    '../_base_/models/segformer_r101.py',
+    '../_base_/models/deeplabv3plus_r50-d8.py',
     # GTA->Cityscapes Data Loading
-    '../_base_/datasets/uda_brain_hcp1-abideC_256x256_nf.py',
+    '../_base_/datasets/brain_hcp1_256x256.py',
     # Basic UDA Self-Training
-    '../_base_/uda/dacs.py',
+    '../_base_/uda/dacs_srconly.py',
     # AdamW Optimizer
     '../_base_/schedules/adamw.py',
     # Linear Learning Rate Warmup with Subsequent Linear Decay
@@ -48,14 +48,14 @@ optimizer = dict(
 n_gpus = 1
 runner = dict(type='IterBasedRunner', max_iters=40000)
 # Logging Configuration
-checkpoint_config = dict(by_epoch=False, interval=10000, max_keep_ckpts=1)
+checkpoint_config = dict(by_epoch=False, interval=40000, max_keep_ckpts=1)
 evaluation = dict(interval=1000, metric='mDice')
 # Meta Information for Result Analysis
-name = 'brain_hcp1-abideC_daformer4_NF'
+name = 'brain_hcp1_sourceonly_3'
 exp = 'basic'
-name_dataset = 'brain_hcp1-hcp2'
-name_architecture = 'segformer_r101'
+name_dataset = 'brain_hcp1'
+name_architecture = 'deeplabv3_r50-d8'
 name_encoder = 'ResNetV1c'
-name_decoder = 'SegFormerHead'
+name_decoder = 'DepthwiseSeparableASPPHead'
 name_uda = 'dacs'
 name_opt = 'adamw_6e-05_pmTrue_poly10warm_1x2_40k'

@@ -84,6 +84,7 @@ class SegFormerHead(BaseDecodeHead):
             x = self.dropout(_c)
         else:
             x = _c
+
         x = self.linear_pred(x)
 
         return x

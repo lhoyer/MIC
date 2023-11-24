@@ -17,7 +17,7 @@ from mmseg.core import eval_metrics
 from mmseg.utils import get_root_logger
 from .builder import DATASETS
 from .pipelines import Compose
-
+from mmseg.models.utils.wandb_log_images import WandbLogPredictions
 
 @DATASETS.register_module()
 class CustomDataset(Dataset):
@@ -335,11 +335,15 @@ class CustomDataset(Dataset):
             raise KeyError('metric {} is not supported'.format(metric))
         eval_results = {}
         gt_seg_maps = self.get_gt_seg_maps(efficient_test)
+        print(np.unique(gt_seg_maps[0]))
         if self.CLASSES is None:
             num_classes = len(
                 reduce(np.union1d, [np.unique(_) for _ in gt_seg_maps]))
         else:
             num_classes = len(self.CLASSES)
+
+        WandbLogPredictions(results, gt_seg_maps)
+
         ret_metrics = eval_metrics(
             results,
             gt_seg_maps,
@@ -349,6 +353,8 @@ class CustomDataset(Dataset):
             label_map=self.label_map,
             reduce_zero_label=self.reduce_zero_label)
 
+        # WandbLogImages(results, gt_seg_maps, num_classes)
+        # quit()
         if self.CLASSES is None:
             class_names = tuple(range(num_classes))
         else:

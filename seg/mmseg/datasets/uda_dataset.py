@@ -91,6 +91,7 @@ class UDADataset(object):
                 for k, v in samples_with_class_and_n.items()
                 if int(k) in self.rcs_classes
             }
+
             self.samples_with_class = {}
             for c in self.rcs_classes:
                 self.samples_with_class[c] = []

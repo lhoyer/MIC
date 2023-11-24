@@ -11,6 +11,8 @@ from .gta import GTADataset
 from .synthia import SynthiaDataset
 from .uda_dataset import UDADataset
 from .brain import BrainDataset
+from .prostate import prostateDataset
+from .cardiac import cardiacDataset
 
 __all__ = [
     'CustomDataset',
@@ -26,5 +28,7 @@ __all__ = [
     'UDADataset',
     'ACDCDataset',
     'DarkZurichDataset',
-    'BrainDataset'
+    'BrainDataset',
+    'prostateDataset',
+    'cardiacDataset'
 ]

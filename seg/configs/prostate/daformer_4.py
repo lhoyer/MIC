@@ -7,9 +7,9 @@
 _base_ = [
     '../_base_/default_runtime.py',
     # DAFormer Network Architecture
-    '../_base_/models/segformer_b5.py',
+    '../_base_/models/segformer_r101.py',
     # GTA->Cityscapes Data Loading
-    '../_base_/datasets/uda_brain_hcp1-hcp2_256x256_noflip.py',
+    '../_base_/datasets/uda_prostate_nci-pirad_256x256.py',
     # Basic UDA Self-Training
     '../_base_/uda/dacs.py',
     # AdamW Optimizer
@@ -48,14 +48,14 @@ optimizer = dict(
 n_gpus = 1
 runner = dict(type='IterBasedRunner', max_iters=40000)
 # Logging Configuration
-checkpoint_config = dict(by_epoch=False, interval=10000, max_keep_ckpts=1)
+checkpoint_config = dict(by_epoch=False, interval=40000, max_keep_ckpts=1)
 evaluation = dict(interval=1000, metric='mDice')
 # Meta Information for Result Analysis
-name = 'brain_hcp1-hcp2_daformer5_NF'
+name = 'prostate_nci-pirad_daformer4'
 exp = 'basic'
-name_dataset = 'brain_hcp1-hcp2_256x256_noflip'
-name_architecture = 'segformer_b5'
-name_encoder = 'mit_b5'
+name_dataset = 'prostate_nci-pirad'
+name_architecture = 'segformer_r101'
+name_encoder = 'ResNetV1c'
 name_decoder = 'SegFormerHead'
 name_uda = 'dacs'
 name_opt = 'adamw_6e-05_pmTrue_poly10warm_1x2_40k'

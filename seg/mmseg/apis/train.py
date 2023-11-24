@@ -16,7 +16,7 @@ from mmseg.core.ddp_wrapper import DistributedDataParallelWrapper
 from mmseg.datasets import build_dataloader, build_dataset
 from mmseg.utils import get_root_logger
 
-from pytorch_lightning.loggers import WandbLogger
+import pprint
 
 def set_random_seed(seed, deterministic=False):
     """Set random seed.
@@ -113,6 +113,10 @@ def train_segmentor(model,
 
     # register eval hooks
     if validate:
+        print(''.join(['-' for _ in range(80)]))
+        print('Registering validation hook...')
+        pprint.pprint(cfg.data.val)
+        print(''.join(['-' for _ in range(80)]))
         val_dataset = build_dataset(cfg.data.val, dict(test_mode=True))
         val_dataloader = build_dataloader(
             val_dataset,

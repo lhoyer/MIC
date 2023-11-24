@@ -11,6 +11,7 @@ from .hrda_head import HRDAHead
 from .isa_head import ISAHead
 from .psp_head import PSPHead
 from .segformer_head import SegFormerHead
+from .segformer_head_HR import SegFormerHeadHR
 from .sep_aspp_head import DepthwiseSeparableASPPHead
 from .uper_head import UPerHead
 
@@ -23,6 +24,7 @@ __all__ = [
     'DAHead',
     'DLV2Head',
     'SegFormerHead',
+    'SegFormerHeadHR',
     'DAFormerHead',
     'DAFormerUNetHead',
     'ISAHead',

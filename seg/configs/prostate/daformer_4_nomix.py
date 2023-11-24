@@ -9,9 +9,9 @@ _base_ = [
     # DAFormer Network Architecture
     '../_base_/models/segformer_r101.py',
     # GTA->Cityscapes Data Loading
-    '../_base_/datasets/uda_brain_hcp1-hcp2_256x256_noflip.py',
+    '../_base_/datasets/uda_prostate_nci-pirad_256x256.py',
     # Basic UDA Self-Training
-    '../_base_/uda/dacs.py',
+    '../_base_/uda/dacs_nomix.py',
     # AdamW Optimizer
     '../_base_/schedules/adamw.py',
     # Linear Learning Rate Warmup with Subsequent Linear Decay
@@ -46,14 +46,14 @@ optimizer = dict(
             pos_block=dict(decay_mult=0.0),
             norm=dict(decay_mult=0.0))))
 n_gpus = 1
-runner = dict(type='IterBasedRunner', max_iters=40000)
+runner = dict(type='IterBasedRunner', max_iters=10000)
 # Logging Configuration
 checkpoint_config = dict(by_epoch=False, interval=10000, max_keep_ckpts=1)
 evaluation = dict(interval=1000, metric='mDice')
 # Meta Information for Result Analysis
-name = 'brain_hcp1-hcp2_daformer4_NF_nocrop'
+name = 'prostate_nci-pirad_daformer4_nomix'
 exp = 'basic'
-name_dataset = 'brain_hcp1-hcp2'
+name_dataset = 'prostate_nci-pirad'
 name_architecture = 'segformer_r101'
 name_encoder = 'ResNetV1c'
 name_decoder = 'SegFormerHead'

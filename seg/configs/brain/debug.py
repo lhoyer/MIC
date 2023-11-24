@@ -7,9 +7,9 @@
 _base_ = [
     '../_base_/default_runtime.py',
     # DAFormer Network Architecture
-    '../_base_/models/segformer_r101.py',
+    '../_base_/models/segformer_r101_HR.py',
     # GTA->Cityscapes Data Loading
-    '../_base_/datasets/debug.py',
+    '../_base_/datasets/debug_dataset.py',
     # Basic UDA Self-Training
     '../_base_/uda/dacs.py',
     # AdamW Optimizer
@@ -19,6 +19,8 @@ _base_ = [
 ]
 # Random Seed
 seed = 0
+# Modifications to Basic Model
+model = dict(decode_head=dict(num_classes=15), pretrained='pretrained/tmp.pth')
 # Modifications to Basic UDA
 uda = dict(
     # Increased Alpha
@@ -30,7 +32,9 @@ uda = dict(
     # Pseudo-Label Crop
     pseudo_weight_ignore_top=0,
     pseudo_weight_ignore_bottom=0)
+
 data = dict(
+    samples_per_gpu=2,
     train=dict(
         # Rare Class Sampling
         # rare_class_sampling=dict(
@@ -46,10 +50,10 @@ optimizer = dict(
             pos_block=dict(decay_mult=0.0),
             norm=dict(decay_mult=0.0))))
 n_gpus = 1
-runner = dict(type='IterBasedRunner', max_iters=50)
+runner = dict(type='IterBasedRunner', max_iters=10000)
 # Logging Configuration
 checkpoint_config = dict(by_epoch=False, interval=10000, max_keep_ckpts=1)
-evaluation = dict(interval=10, metric='mDice')
+evaluation = dict(interval=100, metric='mDice')
 # Meta Information for Result Analysis
 name = 'debug'
 exp = 'basic'

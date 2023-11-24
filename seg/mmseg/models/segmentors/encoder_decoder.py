@@ -75,12 +75,15 @@ class EncoderDecoder(BaseSegmentor):
             else:
                 self.auxiliary_head = builder.build_head(auxiliary_head)
 
-    def extract_feat(self, img):
+    def extract_feat(self, img, with_img=True):
         """Extract features from images."""
         x = self.backbone(img)
         if self.with_neck:
             x = self.neck(x)
-        return x
+        if with_img:
+            return (*x, img)
+        else:
+            return x
 
     def generate_pseudo_label(self, img, img_metas):
         self.update_debug_state()

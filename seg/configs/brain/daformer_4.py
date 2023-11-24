@@ -9,7 +9,7 @@ _base_ = [
     # DAFormer Network Architecture
     '../_base_/models/segformer_r101.py',
     # GTA->Cityscapes Data Loading
-    '../_base_/datasets/uda_brain_hcp1-hcp2_256x256.py',
+    '../_base_/datasets/uda_brain_hcp1-hcp2_256x256_noflip.py',
     # Basic UDA Self-Training
     '../_base_/uda/dacs.py',
     # AdamW Optimizer
@@ -19,6 +19,7 @@ _base_ = [
 ]
 # Random Seed
 seed = 0
+model = dict(decode_head=dict(num_classes=15))
 # Modifications to Basic UDA
 uda = dict(
     # Increased Alpha
@@ -46,10 +47,10 @@ optimizer = dict(
             pos_block=dict(decay_mult=0.0),
             norm=dict(decay_mult=0.0))))
 n_gpus = 1
-runner = dict(type='IterBasedRunner', max_iters=40000)
+runner = dict(type='IterBasedRunner', max_iters=10000)
 # Logging Configuration
 checkpoint_config = dict(by_epoch=False, interval=10000, max_keep_ckpts=1)
-evaluation = dict(interval=1000, metric='mDice')
+evaluation = dict(interval=100, metric='mDice')
 # Meta Information for Result Analysis
 name = 'brain_hcp1-hcp2_daformer4'
 exp = 'basic'

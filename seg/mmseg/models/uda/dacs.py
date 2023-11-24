@@ -38,6 +38,7 @@ from mmseg.models.utils.dacs_transforms import (denorm, get_class_masks,
                                                 get_mean_std, strong_transform)
 from mmseg.models.utils.visualization import prepare_debug_out, subplotimg
 from mmseg.utils.utils import downscale_label_ratio
+from mmseg.models.utils.wandb_log_images import WandbLogImages
 
 
 def _params_equal(ema_model, model):
@@ -83,7 +84,7 @@ class DACS(UDADecorator):
         self.mask_mode = cfg['mask_mode']
         self.enable_masking = self.mask_mode is not None
         self.print_grad_magnitude = cfg['print_grad_magnitude']
-        assert self.mix == 'class'
+        # assert self.mix == 'class'
 
         self.debug_fdist_mask = None
         self.debug_gt_rescale = None
@@ -395,21 +396,27 @@ class DACS(UDADecorator):
             # Apply mixing
             mixed_img, mixed_lbl = [None] * batch_size, [None] * batch_size
             mixed_seg_weight = pseudo_weight.clone()
+
             mix_masks = get_class_masks(gt_semantic_seg)
 
-            for i in range(batch_size):
-                strong_parameters['mix'] = mix_masks[i]
-                mixed_img[i], mixed_lbl[i] = strong_transform(
-                    strong_parameters,
-                    data=torch.stack((img[i], target_img[i])),
-                    target=torch.stack(
-                        (gt_semantic_seg[i][0], pseudo_label[i])))
-                _, mixed_seg_weight[i] = strong_transform(
-                    strong_parameters,
-                    target=torch.stack((gt_pixel_weight[i], pseudo_weight[i])))
-            del gt_pixel_weight
-            mixed_img = torch.cat(mixed_img)
-            mixed_lbl = torch.cat(mixed_lbl)
+            if self.mix == 'class':
+                for i in range(batch_size):
+                    strong_parameters['mix'] = mix_masks[i]
+                    mixed_img[i], mixed_lbl[i] = strong_transform(
+                        strong_parameters,
+                        data=torch.stack((img[i], target_img[i])),
+                        target=torch.stack(
+                            (gt_semantic_seg[i][0], pseudo_label[i])))
+                    _, mixed_seg_weight[i] = strong_transform(
+                        strong_parameters,
+                        target=torch.stack((gt_pixel_weight[i], pseudo_weight[i])))
+                
+                del gt_pixel_weight
+                mixed_img = torch.cat(mixed_img)
+                mixed_lbl = torch.cat(mixed_lbl)
+            else:
+                mixed_img = target_img
+                mixed_lbl = pseudo_label.unsqueeze(1)
 
             # Train on mixed images
             mix_losses = self.get_model().forward_train(
@@ -504,6 +511,8 @@ class DACS(UDADecorator):
                                  f'{(self.local_iter + 1):06d}_{j}.png'))
                 plt.close()
 
+        WandbLogImages(seg_debug)
+
         if self.local_iter % self.debug_img_interval == 0:
             out_dir = os.path.join(self.train_cfg['work_dir'], 'debug')
             os.makedirs(out_dir, exist_ok=True)
@@ -542,5 +551,5 @@ class DACS(UDADecorator):
                     plt.close()
                 del seg_debug
         self.local_iter += 1
-
+        
         return log_vars
