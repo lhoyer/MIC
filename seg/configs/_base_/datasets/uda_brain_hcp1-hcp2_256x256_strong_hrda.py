@@ -10,13 +10,12 @@ data_root = 'da_data/brain/hcp1/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 crop_size = (256, 256)
-img_scale = (320, 320)
 source_train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations'),
-    dict(type='Resize', img_scale=img_scale),
+    dict(type='Resize', img_scale=(512, 512)),
     dict(type='RandomCrop', crop_size=crop_size, cat_max_ratio=0.75),
-    dict(type='RandomFlip', prob=0.0),
+    dict(type='RandomFlip', prob=1.0),
     dict(type='PhotoMetricDistortion'),  # is applied later in dacs.py
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size=crop_size, pad_val=0, seg_pad_val=0),
@@ -26,9 +25,9 @@ source_train_pipeline = [
 target_train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations'),
-    dict(type='Resize', img_scale=img_scale),
+    dict(type='Resize', img_scale=(512, 5112)),
     dict(type='RandomCrop', crop_size=crop_size),
-    dict(type='RandomFlip', prob=0.0),
+    dict(type='RandomFlip', prob=.0),
     dict(type='PhotoMetricDistortion'),  # is applied later in dacs.py
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size=crop_size, pad_val=0, seg_pad_val=0),

@@ -15,7 +15,7 @@ _base_ = [
     # AdamW Optimizer
     '../_base_/schedules/adamw.py',
     # Linear Learning Rate Warmup with Subsequent Linear Decay
-    '../_base_/schedules/poly10warm.py'
+    '../_base_/schedules/cos10warm.py'
 ]
 # Random Seed
 seed = 0
@@ -33,7 +33,7 @@ uda = dict(
     pseudo_weight_ignore_bottom=0)
 class_temp=1.0 #0.01
 data = dict(
-    samples_per_gpu=2,
+    samples_per_gpu=8,
     train=dict(
         # Rare Class Sampling
         rare_class_sampling=dict(
@@ -49,14 +49,15 @@ optimizer = dict(
         custom_keys=dict(
             head=dict(lr_mult=10.0),
             pos_block=dict(decay_mult=0.0),
-            norm=dict(decay_mult=0.0))))
+            norm=dict(decay_mult=0.0)))
+            )
 n_gpus = 1
-runner = dict(type='IterBasedRunner', max_iters=10000)
+runner = dict(type='IterBasedRunner', max_iters=40000)
 # Logging Configuration
 checkpoint_config = dict(by_epoch=False, interval=10000, max_keep_ckpts=1)
-evaluation = dict(interval=100, metric='mDice')
+evaluation = dict(interval=400, metric='mDice')
 # Meta Information for Result Analysis
-name = f'brain_hcp1-hcp2_daformer4_rcs{class_temp:.2f}_strong_HRbn'
+name = f'brain_hcp1-hcp2_daformer4_rcs{class_temp:.2f}_strong_HRbn_lr'
 exp = 'basic'
 name_dataset = 'brain_hcp1-hcp2'
 name_architecture = 'segformer_r101'

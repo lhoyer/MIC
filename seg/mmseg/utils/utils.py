@@ -20,6 +20,7 @@ def downscale_label_ratio(gt,
                           min_ratio,
                           n_classes,
                           ignore_index=255):
+
     assert scale_factor > 1
     bs, orig_c, orig_h, orig_w = gt.shape
     assert orig_c == 1

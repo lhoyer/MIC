@@ -7,20 +7,19 @@
 _base_ = [
     '../_base_/default_runtime.py',
     # DAFormer Network Architecture
-    '../_base_/models/daformer_sepaspp_mitb5_HR.py',
+    '../_base_/models/segformer_r101_HR.py',
     # GTA->Cityscapes Data Loading
-    '../_base_/datasets/debug_dataset.py',
+    '../_base_/datasets/uda_brain_hcp1-hcp2_256x256_strong.py',
     # Basic UDA Self-Training
     '../_base_/uda/dacs.py',
     # AdamW Optimizer
     '../_base_/schedules/adamw.py',
     # Linear Learning Rate Warmup with Subsequent Linear Decay
-    '../_base_/schedules/poly10warm.py'
+    '../_base_/schedules/cos10warm.py'
 ]
 # Random Seed
 seed = 0
-# Modifications to Basic Model
-model = dict(decode_head=dict(num_classes=15), pretrained='pretrained/tmp.pth')
+model = dict(decode_head=dict(num_classes=15), norm_cfg=True)
 # Modifications to Basic UDA
 uda = dict(
     # Increased Alpha
@@ -32,13 +31,15 @@ uda = dict(
     # Pseudo-Label Crop
     pseudo_weight_ignore_top=0,
     pseudo_weight_ignore_bottom=0)
-
+class_temp=1.0 #0.01
 data = dict(
-    samples_per_gpu=2,
+    samples_per_gpu=8,
     train=dict(
         # Rare Class Sampling
-        # rare_class_sampling=dict(
-        #     min_pixels=3000, class_temp=0.01, min_crop_ratio=0.5))
+        rare_class_sampling=dict(
+            min_pixels=10, 
+            class_temp=class_temp, 
+            min_crop_ratio=0.5)
     ))
 # Optimizer Hyperparameters
 optimizer_config = None
@@ -48,14 +49,15 @@ optimizer = dict(
         custom_keys=dict(
             head=dict(lr_mult=10.0),
             pos_block=dict(decay_mult=0.0),
-            norm=dict(decay_mult=0.0))))
+            norm=dict(decay_mult=0.0)))
+            )
 n_gpus = 1
-runner = dict(type='IterBasedRunner', max_iters=10000)
+runner = dict(type='IterBasedRunner', max_iters=40000)
 # Logging Configuration
 checkpoint_config = dict(by_epoch=False, interval=10000, max_keep_ckpts=1)
-evaluation = dict(interval=100, metric='mDice')
+evaluation = dict(interval=400, metric='mDice')
 # Meta Information for Result Analysis
-name = 'debug'
+name = f'brain_hcp1-hcp2_daformer4_rcs{class_temp:.2f}_strong_HRbn_lr_normnet'
 exp = 'basic'
 name_dataset = 'brain_hcp1-hcp2'
 name_architecture = 'segformer_r101'

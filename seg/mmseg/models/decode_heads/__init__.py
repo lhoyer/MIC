@@ -4,6 +4,7 @@
 from .aspp_head import ASPPHead
 from .da_head import DAHead
 from .daformer_head import DAFormerHead
+from .daformer_head_HR import DAFormerHeadHR
 from .daformer_unet_head import DAFormerUNetHead
 from .dlv2_head import DLV2Head
 from .fcn_head import FCNHead
@@ -26,6 +27,7 @@ __all__ = [
     'SegFormerHead',
     'SegFormerHeadHR',
     'DAFormerHead',
+    'DAFormerHeadHR',
     'DAFormerUNetHead',
     'ISAHead',
     'HRDAHead',

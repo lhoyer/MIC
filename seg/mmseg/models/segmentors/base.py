@@ -14,6 +14,9 @@ from mmcv import mkdir_or_exist
 from mmcv.runner import BaseModule, auto_fp16
 from PIL import Image
 
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
 class BaseSegmentor(BaseModule, metaclass=ABCMeta):
     """Base class for segmentors."""
@@ -272,3 +275,46 @@ class BaseSegmentor(BaseModule, metaclass=ABCMeta):
             warnings.warn('show==False and out_file is not specified, only '
                           'result image will be returned')
             return img
+
+class RBFActivation(nn.Module):
+    def __init__(self, scale):
+        super(RBFActivation, self).__init__()
+        self.scale = nn.Parameter(scale)
+        
+    def forward(self, x):
+        return torch.exp(-(x ** 2) / (self.scale ** 2))
+    
+class NormNet(nn.Module):
+    def __init__(self):
+        super(NormNet, self).__init__()
+        norm_activation = 'rbf'
+        self.cnn_layers = [3, 16, 16]
+        self.n1 = 16
+        self.k = 3
+        
+        layers = []
+        for l in range(1, len(self.cnn_layers)):
+            layers.append(nn.Conv2d(self.cnn_layers[l-1], self.cnn_layers[l], kernel_size=self.k, padding=self.k // 2))
+            
+            # if exp_config.norm_batch_norm:
+            layers.append(nn.BatchNorm2d(self.cnn_layers[l]))
+            
+            if norm_activation == 'elu':
+                layers.append(nn.ELU())
+                
+            elif norm_activation == 'relu':
+                layers.append(nn.ReLU())
+                
+            elif norm_activation == 'rbf':
+                init_value = torch.randn(self.cnn_layers[l], 1, 1) * 0.05 + 0.2
+                layers.append(RBFActivation(init_value))
+        
+        self.norm_layers = nn.Sequential(*layers)
+        self.delta_layer = nn.Conv2d(self.cnn_layers[l], 3, kernel_size=self.k, padding=self.k // 2)
+        
+    def forward(self, images):
+        out = images
+        out = self.norm_layers(out)
+        delta = self.delta_layer(out)
+        output = images + delta
+        return output

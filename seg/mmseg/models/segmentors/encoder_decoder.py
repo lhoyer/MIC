@@ -16,8 +16,9 @@ from .. import builder
 from ..builder import SEGMENTORS
 from ..utils.dacs_transforms import get_mean_std
 from ..utils.visualization import prepare_debug_out, subplotimg
-from .base import BaseSegmentor
+from .base import BaseSegmentor, NormNet
 
+import pprint
 
 @SEGMENTORS.register_module()
 class EncoderDecoder(BaseSegmentor):
@@ -36,7 +37,8 @@ class EncoderDecoder(BaseSegmentor):
                  train_cfg=None,
                  test_cfg=None,
                  pretrained=None,
-                 init_cfg=None):
+                 init_cfg=None,
+                 norm_cfg=None):
         super(EncoderDecoder, self).__init__(init_cfg)
         if pretrained is not None:
             assert backbone.get('pretrained') is None, \
@@ -47,6 +49,13 @@ class EncoderDecoder(BaseSegmentor):
             self.neck = builder.build_neck(neck)
         self._init_decode_head(decode_head)
         self._init_auxiliary_head(auxiliary_head)
+
+        self.norm_cfg = norm_cfg
+        if self.norm_cfg is not None:
+            print('Using normalization net')
+            self.normalization_net = NormNet()
+        else:
+            self.normalization_net = None
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
@@ -77,7 +86,10 @@ class EncoderDecoder(BaseSegmentor):
 
     def extract_feat(self, img, with_img=True):
         """Extract features from images."""
-        x = self.backbone(img)
+        if self.norm_cfg is not None:
+            x = self.backbone(self.normalization_net(img))
+        else:
+            x = self.backbone(img)
         if self.with_neck:
             x = self.neck(x)
         if with_img:

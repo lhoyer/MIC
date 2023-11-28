@@ -15,7 +15,7 @@ _base_ = [
     # AdamW Optimizer
     '../_base_/schedules/adamw.py',
     # Linear Learning Rate Warmup with Subsequent Linear Decay
-    '../_base_/schedules/poly10warm.py'
+    '../_base_/schedules/cos10warm.py'
 ]
 # Random Seed
 seed = 0
@@ -44,7 +44,8 @@ data = dict(
 # Optimizer Hyperparameters
 optimizer_config = None
 optimizer = dict(
-    lr=6e-05,
+    lr=6e-04,
+    weight_decay=0.0005,
     paramwise_cfg=dict(
         custom_keys=dict(
             head=dict(lr_mult=10.0),
@@ -53,8 +54,8 @@ optimizer = dict(
 n_gpus = 1
 runner = dict(type='IterBasedRunner', max_iters=10000)
 # Logging Configuration
-checkpoint_config = dict(by_epoch=False, interval=10000, max_keep_ckpts=1)
-evaluation = dict(interval=100, metric='mDice')
+checkpoint_config = dict(by_epoch=False, interval=40000, max_keep_ckpts=1)
+evaluation = dict(interval=400, metric='mDice')
 # Meta Information for Result Analysis
 name = f'brain_hcp1-hcp2_daformer4_rcs{class_temp:.1f}_strong_HRbn-cseg5-v2'
 exp = 'basic'
