@@ -19,13 +19,8 @@ pip install -r requirements.txt -f https://download.pytorch.org/whl/torch_stable
 pip install mmcv-full==1.3.7  # requires the other packages to be installed first
 ```
 
-Further, please download the MiT weights from SegFormer using the
-following script. If problems occur with the automatic download, please follow
-the instructions for a manual download within the script.
-
-```shell
-sh tools/download_checkpoints.sh
-```
+Please, download the MiT-B5 ImageNet weights provided by [SegFormer](https://github.com/NVlabs/SegFormer?tab=readme-ov-file#training)
+from their [OneDrive](https://connecthkuhk-my.sharepoint.com/:f:/g/personal/xieenze_connect_hku_hk/EvOn3l1WyM5JpnMQFSEO5b8B7vrHw9kDaJGII-3N9KNhrg?e=cpydzZ) and put them in the folder `pretrained/`.
 
 ## Dataset Setup
 
