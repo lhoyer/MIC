@@ -29,6 +29,7 @@ def cross_entropy(pred,
     # apply weights and do the reduction
     if weight is not None:
         weight = weight.float()
+
     loss = weight_reduce_loss(
         loss, weight=weight, reduction=reduction, avg_factor=avg_factor)
 
@@ -186,6 +187,7 @@ class CrossEntropyLoss(nn.Module):
                 reduction_override=None,
                 **kwargs):
         """Forward function."""
+        
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
             reduction_override if reduction_override else self.reduction)
@@ -209,3 +211,4 @@ class CrossEntropyLoss(nn.Module):
             }
 
         return loss_cls
+    

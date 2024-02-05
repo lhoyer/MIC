@@ -51,7 +51,7 @@ class EncoderDecoder(BaseSegmentor):
         self._init_auxiliary_head(auxiliary_head)
 
         self.norm_cfg = norm_cfg
-        if self.norm_cfg is not None:
+        if self.norm_cfg is not None and self.norm_cfg:
             print('Using normalization net')
             self.normalization_net = NormNet()
         else:
@@ -84,15 +84,16 @@ class EncoderDecoder(BaseSegmentor):
             else:
                 self.auxiliary_head = builder.build_head(auxiliary_head)
 
-    def extract_feat(self, img, with_img=True):
+    def extract_feat(self, img, with_img=False):
         """Extract features from images."""
-        if self.norm_cfg is not None:
+        if self.normalization_net is not None:
             x = self.backbone(self.normalization_net(img))
         else:
             x = self.backbone(img)
         if self.with_neck:
             x = self.neck(x)
         if with_img:
+            # added for unet type of feature upsampmling to try to increase resolution
             return (*x, img)
         else:
             return x
@@ -156,14 +157,17 @@ class EncoderDecoder(BaseSegmentor):
                                    img_metas,
                                    gt_semantic_seg,
                                    seg_weight=None,
-                                   return_logits=False):
+                                   return_logits=False,
+                                   mode='source'):
         """Run forward function and calculate loss for decode head in
         training."""
         losses = dict()
         loss_decode = self.decode_head.forward_train(x, img_metas,
                                                      gt_semantic_seg,
                                                      self.train_cfg,
-                                                     seg_weight, return_logits)
+                                                     seg_weight, 
+                                                     return_logits, 
+                                                     mode=mode)
 
         losses.update(add_prefix(loss_decode, 'decode'))
         return losses
@@ -215,7 +219,8 @@ class EncoderDecoder(BaseSegmentor):
                       gt_semantic_seg,
                       seg_weight=None,
                       return_feat=False,
-                      return_logits=False):
+                      return_logits=False,
+                      mode='source'):
         """Forward function for training.
 
         Args:
@@ -242,7 +247,8 @@ class EncoderDecoder(BaseSegmentor):
         loss_decode = self._decode_head_forward_train(x, img_metas,
                                                       gt_semantic_seg,
                                                       seg_weight,
-                                                      return_logits)
+                                                      return_logits,
+                                                      mode=mode)
         losses.update(loss_decode)
 
         if self.with_auxiliary_head:

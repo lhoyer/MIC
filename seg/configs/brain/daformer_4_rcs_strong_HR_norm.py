@@ -9,7 +9,7 @@ _base_ = [
     # DAFormer Network Architecture
     '../_base_/models/segformer_r101_HR.py',
     # GTA->Cityscapes Data Loading
-    '../_base_/datasets/uda_brain_hcp1-hcp2_256x256_strong.py',
+    '../_base_/datasets/uda_brain_hcp1_full-hcp2_256x256_TTAbm.py',
     # Basic UDA Self-Training
     '../_base_/uda/dacs.py',
     # AdamW Optimizer
@@ -18,8 +18,10 @@ _base_ = [
     '../_base_/schedules/cos10warm.py'
 ]
 # Random Seed
+loss_name = 'DiceLoss'
 seed = 0
-model = dict(decode_head=dict(num_classes=15), norm_cfg=True)
+model = dict(decode_head=dict(num_classes=15, loss_decode=dict(
+            type=loss_name, use_sigmoid=False, loss_weight=1.0)), norm_cfg=True)
 # Modifications to Basic UDA
 uda = dict(
     # Increased Alpha
@@ -33,7 +35,7 @@ uda = dict(
     pseudo_weight_ignore_bottom=0)
 class_temp=1.0 #0.01
 data = dict(
-    samples_per_gpu=8,
+    samples_per_gpu=4,
     train=dict(
         # Rare Class Sampling
         rare_class_sampling=dict(
@@ -57,10 +59,10 @@ runner = dict(type='IterBasedRunner', max_iters=40000)
 checkpoint_config = dict(by_epoch=False, interval=10000, max_keep_ckpts=1)
 evaluation = dict(interval=400, metric='mDice')
 # Meta Information for Result Analysis
-name = f'brain_hcp1-hcp2_daformer4_rcs{class_temp:.2f}_strong_HRbn_lr_normnet'
+name = f'brain_hcp1-hcp2_daformer4_rcs{class_temp:.2f}_TTAbm_HRbn_lr_normnet_{loss_name}'
 exp = 'basic'
-name_dataset = 'brain_hcp1-hcp2'
-name_architecture = 'segformer_r101'
+name_dataset = 'brain_hcp1-hcp2_TTAbm'
+name_architecture = 'segformer_r101_HR'
 name_encoder = 'ResNetV1c'
 name_decoder = 'SegFormerHead'
 name_uda = 'dacs'

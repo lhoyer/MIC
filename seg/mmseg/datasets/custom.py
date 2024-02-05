@@ -335,14 +335,14 @@ class CustomDataset(Dataset):
             raise KeyError('metric {} is not supported'.format(metric))
         eval_results = {}
         gt_seg_maps = self.get_gt_seg_maps(efficient_test)
-        print(np.unique(gt_seg_maps[0]))
+
         if self.CLASSES is None:
             num_classes = len(
                 reduce(np.union1d, [np.unique(_) for _ in gt_seg_maps]))
         else:
             num_classes = len(self.CLASSES)
 
-        WandbLogPredictions(results, gt_seg_maps)
+        # WandbLogPredictions(results, gt_seg_maps)
 
         ret_metrics = eval_metrics(
             results,

@@ -28,3 +28,20 @@ class BrainDataset(CustomDataset):
             seg_map_suffix='_labelTrainIds.png',
             split=None,
             **kwargs)
+        
+
+@DATASETS.register_module()
+class WMHDataset(CustomDataset):
+    CLASSES = ('1', '2')
+
+    PALETTE = [[153, 153, 153], [128, 64, 128]]
+
+    def __init__(self, **kwargs):
+        assert kwargs.get('split') in [None, 'train']
+        if 'split' in kwargs:
+            kwargs.pop('split')
+        super(WMHDataset, self).__init__(
+            img_suffix='.png',
+            seg_map_suffix='_labelTrainIds.png',
+            split=None,
+            **kwargs)

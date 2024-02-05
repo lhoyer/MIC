@@ -290,7 +290,7 @@ class NormNet(nn.Module):
         norm_activation = 'rbf'
         self.cnn_layers = [3, 16, 16]
         self.n1 = 16
-        self.k = 3
+        self.k = 1
         
         layers = []
         for l in range(1, len(self.cnn_layers)):

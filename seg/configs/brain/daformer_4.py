@@ -9,7 +9,7 @@ _base_ = [
     # DAFormer Network Architecture
     '../_base_/models/segformer_r101.py',
     # GTA->Cityscapes Data Loading
-    '../_base_/datasets/uda_brain_hcp1-hcp2_256x256_noflip.py',
+    '../_base_/datasets/uda_brain_hcp1-hcp2_256x256_strong.py',
     # Basic UDA Self-Training
     '../_base_/uda/dacs.py',
     # AdamW Optimizer
@@ -18,8 +18,11 @@ _base_ = [
     '../_base_/schedules/poly10warm.py'
 ]
 # Random Seed
+loss_name = 'DiceLoss'
+# loss_name = 'CrossEntropyLoss'
 seed = 0
-model = dict(decode_head=dict(num_classes=15))
+model = dict(decode_head=dict(num_classes=15, loss_decode=dict(
+            type=loss_name, use_sigmoid=False, loss_weight=1.0)), norm_cfg=True)
 # Modifications to Basic UDA
 uda = dict(
     # Increased Alpha
@@ -47,12 +50,12 @@ optimizer = dict(
             pos_block=dict(decay_mult=0.0),
             norm=dict(decay_mult=0.0))))
 n_gpus = 1
-runner = dict(type='IterBasedRunner', max_iters=10000)
+runner = dict(type='IterBasedRunner', max_iters=40000)
 # Logging Configuration
 checkpoint_config = dict(by_epoch=False, interval=10000, max_keep_ckpts=1)
 evaluation = dict(interval=100, metric='mDice')
 # Meta Information for Result Analysis
-name = 'brain_hcp1-hcp2_daformer4'
+name = f'brain_hcp1-hcp2_daformer4_{loss_name}_norm'
 exp = 'basic'
 name_dataset = 'brain_hcp1-hcp2'
 name_architecture = 'segformer_r101'

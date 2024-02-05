@@ -84,7 +84,7 @@ evaluation = dict(interval=4000, metric='mIoU')
 # Meta Information for Result Analysis
 name = 'gtaHR2csHR_hrda_s1'
 exp = 'basic'
-name_dataset = 'gtaHR2cityscapesHR_1024x1024'
+name_dataset = 'gta2cityscapes_HR1024x1024'
 name_architecture = 'hrda1-512-0.1_daformer_sepaspp_sl_mitb5'
 name_encoder = 'mitb5'
 name_decoder = 'hrda1-512-0.1_daformer_sepaspp_sl'

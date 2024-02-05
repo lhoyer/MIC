@@ -18,8 +18,13 @@ _base_ = [
     '../_base_/schedules/cos10warm.py'
 ]
 # Random Seed
+loss_name = 'DiceLoss'
+# loss_name = 'CrossEntropyLoss'
 seed = 0
-model = dict(decode_head=dict(num_classes=15), pretrained='pretrained/resnet101-cseg5-v2.pth')
+model = dict(decode_head=dict(num_classes=15, loss_decode=dict(
+            type=loss_name, use_sigmoid=False, loss_weight=1.0)), norm_cfg=False, 
+            pretrained='pretrained/resnet101-cseg5-v2.pth')
+
 # Modifications to Basic UDA
 uda = dict(
     # Increased Alpha
@@ -52,12 +57,12 @@ optimizer = dict(
             pos_block=dict(decay_mult=0.0),
             norm=dict(decay_mult=0.0))))
 n_gpus = 1
-runner = dict(type='IterBasedRunner', max_iters=10000)
+runner = dict(type='IterBasedRunner', max_iters=40000)
 # Logging Configuration
 checkpoint_config = dict(by_epoch=False, interval=40000, max_keep_ckpts=1)
 evaluation = dict(interval=400, metric='mDice')
 # Meta Information for Result Analysis
-name = f'brain_hcp1-hcp2_daformer4_rcs{class_temp:.1f}_strong_HRbn-cseg5-v2'
+name = f'brain_hcp1-hcp2_daformer4_rcs{class_temp:.1f}_strong_HRbn-cseg5-v2_{loss_name}'
 exp = 'basic'
 name_dataset = 'brain_hcp1-hcp2'
 name_architecture = 'segformer_r101'

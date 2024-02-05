@@ -9,15 +9,18 @@ _base_ = [
     # DAFormer Network Architecture
     '../_base_/models/segformer_r101.py',
     # GTA->Cityscapes Data Loading
-    '../_base_/datasets/brain_hcp1_256x256.py',
+    '../_base_/datasets/brain_hcp2_256x256.py',
     # Basic UDA Self-Training
     '../_base_/uda/dacs_srconly.py',
     # AdamW Optimizer
     '../_base_/schedules/adamw.py',
     # Linear Learning Rate Warmup with Subsequent Linear Decay
-    '../_base_/schedules/poly10warm.py'
+    '../_base_/schedules/cos10warm.py'
 ]
-model = dict(decode_head=dict(num_classes=15))
+# loss_name = 'CrossEntropyLoss'
+loss_name = 'DiceLoss'
+model = dict(decode_head=dict(num_classes=15, loss_decode=dict(
+            type=loss_name, use_sigmoid=False, loss_weight=1.0)), norm_cfg=False)
 # Random Seed
 seed = 0
 # Modifications to Basic UDA
@@ -31,12 +34,19 @@ uda = dict(
     # Pseudo-Label Crop
     pseudo_weight_ignore_top=0,
     pseudo_weight_ignore_bottom=0)
+
+class_temp=0.1
+per_image=True
 data = dict(
     train=dict(
         # Rare Class Sampling
-        # rare_class_sampling=dict(
-        #     min_pixels=3000, class_temp=0.01, min_crop_ratio=0.5))
+        rare_class_sampling=dict(
+            min_pixels=8, 
+            class_temp=class_temp, 
+            min_crop_ratio=0.5,
+            per_image=per_image)
     ))
+
 # Optimizer Hyperparameters
 optimizer_config = None
 optimizer = dict(
@@ -52,9 +62,9 @@ runner = dict(type='IterBasedRunner', max_iters=10000)
 checkpoint_config = dict(by_epoch=False, interval=10000, max_keep_ckpts=1)
 evaluation = dict(interval=100, metric='mDice')
 # Meta Information for Result Analysis
-name = 'brain_hcp1_sourceonly_4'
+name = f'brain_hcp2_sourceonly_4_{loss_name}'
 exp = 'basic'
-name_dataset = 'brain_hcp1'
+name_dataset = 'brain_hcp2'
 name_architecture = 'segformer_r101'
 name_encoder = 'ResNetV1c'
 name_decoder = 'SegFormerHead'

@@ -45,6 +45,7 @@ def train_segmentor(model,
                     timestamp=None,
                     meta=None):
     """Launch segmentor training."""
+    
     logger = get_root_logger(cfg.log_level)
 
     # prepare data loaders
@@ -110,7 +111,7 @@ def train_segmentor(model,
 
     # an ugly walkaround to make the .log and .log.json filenames the same
     runner.timestamp = timestamp
-
+    
     # register eval hooks
     if validate:
         print(''.join(['-' for _ in range(80)]))
@@ -133,4 +134,5 @@ def train_segmentor(model,
         runner.resume(cfg.resume_from)
     elif cfg.load_from:
         runner.load_checkpoint(cfg.load_from)
+
     runner.run(data_loaders, cfg.workflow)

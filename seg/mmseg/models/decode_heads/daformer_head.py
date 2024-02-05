@@ -15,8 +15,8 @@ from .aspp_head import ASPPModule
 from .decode_head import BaseDecodeHead
 from .segformer_head import MLP
 from .sep_aspp_head import DepthwiseSeparableASPPModule
-
-
+import torch.nn.functional as F
+# import mmcv
 class ASPPWrapper(nn.Module):
 
     def __init__(self,
@@ -155,10 +155,9 @@ class DAFormerHead(BaseDecodeHead):
 
         self.fuse_layer = build_layer(
             sum(embed_dims), self.channels, **fusion_cfg)
-
-    def forward(self, inputs):
+    
+    def forward(self, inputs, return_features=False):
         x = inputs
-
         n, _, h, w = x[-1].shape
         # for f in x:
         #     mmcv.print_log(f'{f.shape}', 'mmseg')
@@ -181,6 +180,13 @@ class DAFormerHead(BaseDecodeHead):
                     align_corners=self.align_corners)
 
         x = self.fuse_layer(torch.cat(list(_c.values()), dim=1))
-        x = self.cls_seg(x)
-        
-        return x
+
+        if return_features:
+            feature = F.normalize(self.proj_head(x), p=2, dim=1)
+            out = self.cls_seg(x)
+            
+            return out, feature
+        else:
+            x = self.cls_seg(x)
+            
+            return x

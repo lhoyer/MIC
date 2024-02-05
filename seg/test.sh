@@ -7,10 +7,11 @@
 
 #!/bin/bash
 
+FOLDERPATH='/usr/bmicnas02/data-biwi-01/klanna_data/results/MIC/work_dirs/local-basic/'
 TEST_ROOT=$1
-CONFIG_FILE="${TEST_ROOT}/*${TEST_ROOT: -1}.py"  # or .json for old configs
-CHECKPOINT_FILE="${TEST_ROOT}/latest.pth"
-SHOW_DIR="${TEST_ROOT}/preds"
+CONFIG_FILE="${FOLDERPATH}${TEST_ROOT}/*${TEST_ROOT: -1}.py"  # or .json for old configs
+CHECKPOINT_FILE="${FOLDERPATH}${TEST_ROOT}/latest.pth"
+SHOW_DIR="${FOLDERPATH}${TEST_ROOT}/preds"
 echo 'Config File:' $CONFIG_FILE
 echo 'Checkpoint File:' $CHECKPOINT_FILE
 echo 'Predictions Output Directory:' $SHOW_DIR

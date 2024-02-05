@@ -8,6 +8,11 @@ from numpy import random
 
 from ..builder import PIPELINES
 
+import scipy
+from scipy.ndimage.interpolation import map_coordinates
+from scipy.ndimage.filters import gaussian_filter
+from skimage import transform
+from typing import List, Optional
 
 @PIPELINES.register_module()
 class Resize(object):
@@ -878,7 +883,7 @@ class PhotoMetricDistortion(object):
 
         # random hue
         img = self.hue(img)
-
+        
         # random contrast
         if mode == 0:
             img = self.contrast(img)
@@ -894,4 +899,381 @@ class PhotoMetricDistortion(object):
                      f'saturation_range=({self.saturation_lower}, '
                      f'{self.saturation_upper}), '
                      f'hue_delta={self.hue_delta})')
+        return repr_str
+
+@PIPELINES.register_module()
+class ElasticTransformation(object):
+    """Random crop the image & seg.
+
+    Args:
+        crop_size (tuple): Expected size after cropping, (h, w).
+        cat_max_ratio (float): The maximum ratio that single category could
+            occupy.
+    """
+
+    def __init__(self, data_aug_ratio: float = 0.25,
+                        sigma: float = 20,
+                        alpha: float = 1000,
+                        ):
+        
+        self.data_aug_ratio = data_aug_ratio
+        self.sigma = sigma
+        self.alpha = alpha
+
+    def set_random_elastic_transform(
+            self, shape, random_state=None  # 2d
+        ):
+            if random_state is None:
+                random_state = np.random.RandomState(None)
+
+            # random_state.rand(*shape) generate an array of image size with random uniform noise between 0 and 1
+            # random_state.rand(*shape)*2 - 1 becomes an array of image size with random uniform noise between -1 and 1
+            # applying the gaussian filter with a relatively large std deviation (~20) makes this a relatively smooth deformation field, but with very small deformation values (~1e-3)
+            # multiplying it with alpha (500) scales this up to a reasonable deformation (max-min:+-10 pixels)
+            # multiplying it with alpha (1000) scales this up to a reasonable deformation (max-min:+-25 pixels)
+            dx = (
+                gaussian_filter(
+                    (random_state.rand(*shape) * 2 - 1), self.sigma, mode="constant", cval=0
+                )
+                * self.alpha
+            )
+            dy = (
+                gaussian_filter(
+                    (random_state.rand(*shape) * 2 - 1), self.sigma, mode="constant", cval=0
+                )
+                *self.alpha
+            )
+
+            x, y = np.meshgrid(np.arange(shape[1]), np.arange(shape[0]))
+            return np.reshape(y + dy, (-1, 1)), np.reshape(x + dx, (-1, 1))
+
+    def elastic_transform(
+            self, image, indices, order
+        ):
+            shape = image.shape
+            return map_coordinates(image, indices, order=order, mode="reflect").reshape(
+                shape
+            )
+    
+    def __call__(self, results):
+        """Call function to randomly crop images, semantic segmentation maps.
+
+        Args:
+            results (dict): Result dict from loading pipeline.
+
+        Returns:
+            dict: Randomly cropped results, 'img_shape' key in result dict is
+                updated according to crop size.
+        """
+        img = results['img']
+        img_shape = img.shape
+
+        # ========
+        # elastic deformation
+        # ========
+        if np.random.rand() < self.data_aug_ratio:
+            indices = self.set_random_elastic_transform(img_shape[:2])
+
+            for i in range(img.shape[2]):
+                img[:, :, i] = self.elastic_transform(img[:, :, i], indices, order=1)
+
+            # rotate segs
+            for key in results.get('seg_fields', []):
+                results[key] = self.elastic_transform(results[key], indices, order=0)
+
+        results['img'] = img
+        results['img_shape'] = img_shape
+        
+        return results
+
+    def __repr__(self):    
+        repr_str = self.__class__.__name__    
+        repr_str += (f'data_aug_ratio=({self.data_aug_ratio}, '
+                     f'sigma={self.sigma}, '
+                     f'alpha={self.alpha})')
+        
+        return repr_str
+    
+
+@PIPELINES.register_module()
+class StructuralAug(object):
+    """Random crop the image & seg.
+
+    Args:
+        crop_size (tuple): Expected size after cropping, (h, w).
+        cat_max_ratio (float): The maximum ratio that single category could
+            occupy.
+    """
+
+    def __init__(self, data_aug_ratio: float = 0.25,
+                        trans_min: float = -10,
+                        trans_max: float = 10,
+                        rot_min: int = -10,
+                        rot_max: int = 10,
+                        scale_min: float = 0.9,
+                        scale_max: float = 1.1,
+                        ):
+        
+        self.data_aug_ratio = data_aug_ratio
+        self.trans_min = trans_min
+        self.trans_max = trans_max
+        self.rot_min = rot_min
+        self.rot_max = rot_max
+        self.scale_min = scale_min
+        self.scale_max = scale_max
+
+    def crop_or_pad_slice_to_size(self, slice, nx, ny):
+        x, y = slice.shape
+
+        x_s = (x - nx) // 2
+        y_s = (y - ny) // 2
+        x_c = (nx - x) // 2
+        y_c = (ny - y) // 2
+
+        if x > nx and y > ny:
+            slice_cropped = slice[x_s : x_s + nx, y_s : y_s + ny]
+        else:
+            slice_cropped = np.zeros((nx, ny))
+            if x <= nx and y > ny:
+                slice_cropped[x_c : x_c + x, :] = slice[:, y_s : y_s + ny]
+            elif x > nx and y <= ny:
+                slice_cropped[:, y_c : y_c + y] = slice[x_s : x_s + nx, :]
+            else:
+                slice_cropped[x_c : x_c + x, y_c : y_c + y] = slice[:, :]
+
+        return slice_cropped
+    
+    def __call__(self, results):
+        """Call function to randomly crop images, semantic segmentation maps.
+
+        Args:
+            results (dict): Result dict from loading pipeline.
+
+        Returns:
+            dict: Randomly cropped results, 'img_shape' key in result dict is
+                updated according to crop size.
+        """
+        img = results['img']
+        img_shape = img.shape
+
+        # ========
+        # translation
+        # ========
+        if np.random.rand() < self.data_aug_ratio:
+            random_shift_x = np.random.uniform(self.trans_min, self.trans_max)
+            random_shift_y = np.random.uniform(self.trans_min, self.trans_max)
+
+            for i in range(img.shape[2]):
+                img[:, :, i] = scipy.ndimage.shift(
+                    img[:, :, i], shift=(random_shift_x, random_shift_y), order=1
+                )
+
+            for key in results.get('seg_fields', []):
+                results[key] = scipy.ndimage.shift(
+                    results[key], shift=(random_shift_x, random_shift_y), order=0
+                )
+
+        # ========
+        # rotation
+        # ========
+        if np.random.rand() < self.data_aug_ratio:
+            random_angle = np.random.uniform(self.rot_min, self.rot_max)
+
+            img = scipy.ndimage.rotate(
+                img, reshape=False, angle=random_angle, axes=(1, 0), order=1
+            )
+
+            for key in results.get('seg_fields', []):
+                results[key] = scipy.ndimage.rotate(
+                    results[key], reshape=False, angle=random_angle, axes=(1, 0), order=0
+                )
+
+        # ========
+        # scaling
+        # ========
+        if np.random.rand() < self.data_aug_ratio:
+            n_x, n_y = img.shape[:2]
+
+            scale_val = np.round(np.random.uniform(self.scale_min, self.scale_max), 2)
+
+            for i in range(img.shape[2]):
+                images_i_tmp = transform.rescale(
+                    img[:, :, i], scale_val, order=1, preserve_range=True, mode="constant"
+                )
+
+                img[:, :, i] = self.crop_or_pad_slice_to_size(images_i_tmp, n_x, n_y)            
+
+            for key in results.get('seg_fields', []):
+                labels_i_tmp = transform.rescale(
+                    results[key], scale_val, order=0, preserve_range=True, mode="constant"
+                )
+                results[key] = self.crop_or_pad_slice_to_size(labels_i_tmp, n_x, n_y)
+
+        results['img'] = img
+        results['img_shape'] = img_shape
+        
+        return results
+
+    def __repr__(self):    
+        repr_str = self.__class__.__name__    
+        repr_str += (f'data_aug_ratio=({self.data_aug_ratio}, '
+                     f'trans_min={self.trans_min}, '
+                     f'trans_max={self.trans_max}, '
+                     f'rot_min={self.rot_min}, '
+                     f'rot_max={self.rot_max}, '
+                        f'scale_min={self.scale_min}, '
+                        f'scale_max={self.scale_max})')
+        
+        return repr_str
+
+@PIPELINES.register_module()
+class MedPhotoMetricDistortion(object):
+    """Random crop the image & seg.
+
+    Args:
+        crop_size (tuple): Expected size after cropping, (h, w).
+        cat_max_ratio (float): The maximum ratio that single category could
+            occupy.
+    """
+
+    def __init__(self, data_aug_ratio: float = 0.25,
+                        gamma_min: float = 0.5,
+                        gamma_max: float = 2.0,
+                        brightness_min: float = 0.0,
+                        brightness_max: float = 0.1,
+                        noise_min: float = 0.0,
+                        noise_max: float = 0.1
+                        ):
+        
+        self.data_aug_ratio = data_aug_ratio
+        self.gamma_min = gamma_min
+        self.gamma_max = gamma_max
+        self.brightness_min = brightness_min
+        self.brightness_max = brightness_max
+        self.noise_min = noise_min
+        self.noise_max = noise_max
+    
+    def __call__(self, results):
+        """Call function to randomly crop images, semantic segmentation maps.
+
+        Args:
+            results (dict): Result dict from loading pipeline.
+
+        Returns:
+            dict: Randomly cropped results, 'img_shape' key in result dict is
+                updated according to crop size.
+        """
+
+        img = results['img'].astype(np.float32)
+        img /= 255.0
+
+        # ========
+        # contrast
+        # ========
+        if np.random.rand() < self.data_aug_ratio:
+            # gamma contrast augmentation
+            img **= np.round(np.random.uniform(self.gamma_min, self.gamma_max), 2)
+
+        # ========
+        # brightness
+        # ========
+        if np.random.rand() < self.data_aug_ratio:
+            # brightness augmentation
+            img += np.round(np.random.uniform(self.brightness_min, self.brightness_max), 2)
+
+        # ========
+        # noise
+        # ========
+        if np.random.rand() < self.data_aug_ratio:
+            # noise augmentation
+            img += np.random.normal(self.noise_min, self.noise_max, size=img.shape)
+        
+        results['img'] = np.clip(img * 255, 0, 255).astype(np.uint8)
+   
+        return results
+
+    def __repr__(self):    
+        repr_str = self.__class__.__name__    
+        repr_str += (f'data_aug_ratio=({self.data_aug_ratio}, '
+                        f'gamma_min={self.gamma_min}, '
+                        f'gamma_max={self.gamma_max}, '
+                        f'brightness_min={self.brightness_min}, '
+                        f'brightness_max={self.brightness_max}, '
+                        f'noise_min={self.noise_min}, '
+                        f'noise_max={self.noise_max})')
+        
+        return repr_str
+    
+@PIPELINES.register_module()
+class ContrastFlip(object):
+    """Random crop the image & seg.
+
+    Args:
+        data_aug_ratio (float): The ratio of data augmentation.
+        gamma_min (float): The minimum gamma value.
+        gamma_max (float): The maximum gamma value.
+        background (float): The background value.
+        background_cl (int): The background class.
+        random_contrast (bool): Whether to use random contrast.
+    """
+
+    def __init__(self, data_aug_ratio: float = 0.25,
+                        gamma_min: float = 0.85,
+                        gamma_max: float = 1.20,
+                        background: float = -1.5,
+                        background_cl: int = 0,
+                        random_contrast: bool = False
+                        ):
+        
+        self.data_aug_ratio = data_aug_ratio
+        self.gamma_min = gamma_min
+        self.gamma_max = gamma_max
+        self.background = background
+        self.background_cl = background_cl
+        self.random_contrast = random_contrast
+
+    def __call__(self, results):
+        """Call function to randomly crop images, semantic segmentation maps.
+
+        Args:
+            results (dict): Result dict from loading pipeline.
+
+        Returns:
+            dict: Randomly cropped results, 'img_shape' key in result dict is
+                updated according to crop size.
+        """
+
+        images_ = results['img'].astype(np.float32)
+        images_ /= 255.0
+        
+        if np.random.rand() < self.data_aug_ratio:
+            # flip image colors
+            images_ *= -1
+            # redefine background
+            images_[images_ == self.background_cl] = self.background
+            
+            # normalize image
+            min_val = np.min(images_)
+            max_val = np.max(images_)
+            images_ -= min_val
+            if max_val - min_val != 0:
+                images_ /= (max_val - min_val)
+
+            if self.random_contrast:
+                c = np.round(np.random.uniform(self.gamma_min, self.gamma_max), 2)
+                images_ **= c
+            
+        results['img'] = np.clip(images_ * 255, 0, 255).astype(np.uint8)
+        
+        return results
+
+    def __repr__(self):      
+        repr_str = self.__class__.__name__  
+        repr_str += (f'data_aug_ratio=({self.data_aug_ratio}, '
+                        f'gamma_min={self.gamma_min}, '
+                        f'gamma_max={self.gamma_max}, '
+                        f'background_cl={self.background_cl}, '
+                        f'background={self.background}, '
+                        f'random_contrast={self.random_contrast}')
+        
         return repr_str

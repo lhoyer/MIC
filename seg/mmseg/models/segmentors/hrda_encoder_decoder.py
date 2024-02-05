@@ -231,7 +231,8 @@ class HRDAEncoderDecoder(EncoderDecoder):
                       gt_semantic_seg,
                       seg_weight=None,
                       return_feat=False,
-                      return_logits=False):
+                      return_logits=False,
+                      mode='source'):
         """Forward function for training.
 
         Args:
@@ -265,7 +266,8 @@ class HRDAEncoderDecoder(EncoderDecoder):
         loss_decode = self._decode_head_forward_train(mres_feats, img_metas,
                                                       gt_semantic_seg,
                                                       seg_weight,
-                                                      return_logits)
+                                                      return_logits,
+                                                      mode=mode)
         losses.update(loss_decode)
 
         if self.decode_head.debug and prob_vis is not None:

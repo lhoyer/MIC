@@ -1,15 +1,16 @@
 #!/bin/bash
 
-#SBATCH  --output=./LOGS/%j.out
-#SBATCH  --error=./LOGS/%j.out
+#SBATCH  --output=/usr/bmicnas02/data-biwi-01/klanna_data/results/MIC/LOGS/%j.out
+#SBATCH  --error=/usr/bmicnas02/data-biwi-01/klanna_data/results/MIC/LOGS/%j.out
 #SBATCH  --gres=gpu:1
-#SBATCH  --mem=40G
+#SBATCH  --mem=80G
 ##SBATCH --account=bmic
+##SBATCH --time=300
+
+WORKPATH=/usr/bmicnas02/data-biwi-01/klanna_data/results/MIC/
 
 source /itet-stor/klanna/net_scratch/conda/etc/profile.d/conda.sh
-conda activate pytcu11
- 
-WORKPATH=/usr/bmicnas02/data-biwi-01/klanna_data/results/MIC/
+conda activate mic
 
 python run_experiments.py "$@" 
 # --work-dir $WORKPATH

@@ -14,7 +14,7 @@ from mmcv.cnn import ConvModule
 from mmseg.ops import resize
 from ..builder import HEADS
 from .decode_head import BaseDecodeHead
-
+import torch.nn.functional as F
 
 class MLP(nn.Module):
     """Linear Embedding."""
@@ -60,7 +60,14 @@ class SegFormerHead(BaseDecodeHead):
         self.linear_pred = nn.Conv2d(
             embedding_dim, self.num_classes, kernel_size=1)
 
-    def forward(self, inputs):
+        if self.projection_head:
+            hidden_dim = 768
+            out_dim = 256
+            self.proj_head = torch.nn.Sequential(*[nn.Conv2d(hidden_dim, hidden_dim, kernel_size=1), 
+                           nn.ReLU(),
+                           nn.Conv2d(hidden_dim, out_dim, kernel_size=1)])
+
+    def forward(self, inputs, return_features=False):
         x = inputs
         n, _, h, w = x[-1].shape
         # for f in x:
@@ -85,6 +92,12 @@ class SegFormerHead(BaseDecodeHead):
         else:
             x = _c
 
-        x = self.linear_pred(x)
-
-        return x
+        if return_features:
+            feature = F.normalize(self.proj_head(x), p=2, dim=1)
+            out = self.linear_pred(x)
+            
+            return out, feature
+        else:
+            x = self.linear_pred(x)
+            
+            return x

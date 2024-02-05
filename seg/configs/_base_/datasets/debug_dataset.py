@@ -14,8 +14,9 @@ source_train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations'),
     dict(type='Resize', img_scale=(256, 256)),
+    dict(type='ContrastFlip', data_aug_ratio=1.0),
     dict(type='RandomCrop', crop_size=crop_size, cat_max_ratio=0.5),
-    dict(type='RandomFlip', prob=0.0),
+    dict(type='RandomFlip', prob=0.0),    
     dict(type='PhotoMetricDistortion'),  # is applied later in dacs.py
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size=crop_size, pad_val=0, seg_pad_val=255),
@@ -52,7 +53,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=32,
+    samples_per_gpu=2,
     workers_per_gpu=4,
     train=dict(
         type='UDADataset',

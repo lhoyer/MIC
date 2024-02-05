@@ -9,20 +9,24 @@ _base_ = [
     # DAFormer Network Architecture
     '../_base_/models/daformer_sepaspp_mitb5.py',
     # GTA->Cityscapes Data Loading
-    '../_base_/datasets/uda_brain_hcp1-hcp2_256x256_strong.py',
+    '../_base_/datasets/uda_brain_hcp1_full-hcp2_256x256_TTAbm.py',
     # Basic UDA Self-Training
     '../_base_/uda/dacs_a999_fdthings.py',
     # AdamW Optimizer
     '../_base_/schedules/adamw.py',
     # Linear Learning Rate Warmup with Subsequent Linear Decay
-    '../_base_/schedules/poly10warm.py'
+    '../_base_/schedules/cos10warm.py'
 ]
 # Random Seed
+loss_name = 'DiceLoss'
 seed = 0
 model = dict(
+    norm_cfg=True,
     type='HRDAEncoderDecoder',
     decode_head=dict(
         num_classes=15,
+        loss_decode=dict(
+            type=loss_name, use_sigmoid=False, loss_weight=1.0),
         type='HRDAHead',
         # Use the DAFormer decoder for each scale.
         single_scale_head='DAFormerHead',
@@ -55,12 +59,14 @@ uda = dict(
     alpha=0.999,
     # Thing-Class Feature Distance
     imnet_feature_dist_lambda=0.005,
-    imnet_feature_dist_classes=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+    imnet_feature_dist_classes=[5, 7, 8, 9, 10],
     imnet_feature_dist_scale_min_ratio=0.75,
     # Pseudo-Label Crop
     pseudo_weight_ignore_top=0,
     pseudo_weight_ignore_bottom=0)
-class_temp=1.0
+
+class_temp=0.1
+per_image=True
 data = dict(
     samples_per_gpu=8,
     train=dict(
@@ -68,7 +74,8 @@ data = dict(
         rare_class_sampling=dict(
             min_pixels=10, 
             class_temp=class_temp, 
-            min_crop_ratio=0.5)
+            min_crop_ratio=0.5,
+            per_image=per_image)
     ))
 # Optimizer Hyperparameters
 optimizer_config = None
@@ -80,14 +87,14 @@ optimizer = dict(
             pos_block=dict(decay_mult=0.0),
             norm=dict(decay_mult=0.0))))
 n_gpus = 1
-runner = dict(type='IterBasedRunner', max_iters=10000)
+runner = dict(type='IterBasedRunner', max_iters=40000)
 # Logging Configuration
 checkpoint_config = dict(by_epoch=False, interval=10000, max_keep_ckpts=1)
 evaluation = dict(interval=100, metric='mDice')
 # Meta Information for Result Analysis
-name = f'brain_hcp1-hcp2_daformerHRDA_rcs{class_temp:.1f}_strong'
+name = f'brain_hcp1_full-hcp2_TTAbm_daformerHRDA_{int(per_image)}rcs{class_temp:.1f}_strong_{loss_name}'
 exp = 'basic'
-name_dataset = 'brain_hcp1-hcp2'
+name_dataset = 'brain_hcp1-hcp2_TTAbm'
 name_architecture = 'hrda1-512-0.1_daformer_sepaspp_sl_mitb5'
 name_encoder = 'mitb5'
 name_decoder = 'hrda1-512-0.1_daformer_sepaspp_sl'

@@ -65,6 +65,8 @@ class BaseDecodeHead(BaseModule, metaclass=ABCMeta):
                      type='CrossEntropyLoss',
                      use_sigmoid=False,
                      loss_weight=1.0),
+                 loss_decode_teacher=None,
+                 projection_head=False,
                  decoder_params=None,
                  ignore_index=255,
                  sampler=None,
@@ -80,7 +82,28 @@ class BaseDecodeHead(BaseModule, metaclass=ABCMeta):
         self.norm_cfg = norm_cfg
         self.act_cfg = act_cfg
         self.in_index = in_index
-        self.loss_decode = build_loss(loss_decode)
+        self.loss_decode = {}
+        self.contrastive = {}
+        self.contrastive['source'] = ('Contrast' in loss_decode['type'])
+        self.loss_decode['source'] = build_loss(loss_decode)
+        self.projection_head = projection_head
+
+        if loss_decode_teacher is not None:
+            self.contrastive['teacher'] = ('Contrast' in loss_decode_teacher['type'])
+            self.loss_decode['teacher'] = build_loss(loss_decode_teacher)
+        else:
+            self.contrastive['teacher'] = self.contrastive['source']
+            self.loss_decode['teacher'] = self.loss_decode['source']
+        
+        self.projection_head = projection_head or self.contrastive['source'] or self.contrastive['teacher']
+        
+        if self.projection_head:
+            hidden_dim = 256
+            out_dim = 256
+            self.proj_head = torch.nn.Sequential(*[nn.Conv2d(hidden_dim, hidden_dim, kernel_size=1), 
+                           nn.ReLU(),
+                           nn.Conv2d(hidden_dim, out_dim, kernel_size=1)])
+
         self.ignore_index = ignore_index
         self.align_corners = align_corners
         if sampler is not None:
@@ -180,9 +203,10 @@ class BaseDecodeHead(BaseModule, metaclass=ABCMeta):
                       inputs,
                       img_metas,
                       gt_semantic_seg,
-                      train_cfg,
+                      train_cfg,                      
                       seg_weight=None,
-                      return_logits=False):
+                      return_logits=False,
+                      mode='source'):
         """Forward function for training.
         Args:
             inputs (list[Tensor]): List of multi-level img features.
@@ -199,9 +223,13 @@ class BaseDecodeHead(BaseModule, metaclass=ABCMeta):
             dict[str, Tensor]: a dictionary of loss components
         """
         self.debug_output = {}
-        seg_logits = self.forward(inputs)
+        if self.contrastive[mode]:
+            seg_logits, features = self.forward(inputs, return_features=True)
+            losses = self.losses(seg_logits, gt_semantic_seg, seg_weight, mode=mode, features=features)
+        else:
+            seg_logits = self.forward(inputs)
+            losses = self.losses(seg_logits, gt_semantic_seg, seg_weight, mode=mode)
         
-        losses = self.losses(seg_logits, gt_semantic_seg, seg_weight)
         if return_logits:
             losses['logits'] = seg_logits
         return losses
@@ -231,29 +259,33 @@ class BaseDecodeHead(BaseModule, metaclass=ABCMeta):
         return output
 
     @force_fp32(apply_to=('seg_logit', ))
-    def losses(self, seg_logit, seg_label, seg_weight=None):
+    def losses(self, seg_logit, seg_label, seg_weight=None, mode='source', features=None):
         """Compute segmentation loss."""
         loss = dict()
-
-        # simple workaround for medical imaging
-        if seg_logit.shape[-1] != seg_label.shape[-1]:
-            seg_logit = resize(
-                input=seg_logit,
-                size=seg_label.shape[2:],
-                mode='bilinear',
-                align_corners=self.align_corners)
-            
+        seg_logit = resize(
+            input=seg_logit,
+            size=seg_label.shape[2:],
+            mode='bilinear',
+            align_corners=self.align_corners)            
         if self.sampler is not None:
             seg_weight = self.sampler.sample(seg_logit, seg_label)
         seg_label = seg_label.squeeze(1)
     
-        self.loss_decode.debug = self.debug
-        loss['loss_seg'] = self.loss_decode(
-            seg_logit,
-            seg_label,
-            weight=seg_weight,
-            ignore_index=self.ignore_index)
+        self.loss_decode[mode].debug = self.debug
+        if features is not None:
+            loss['loss_seg'] = self.loss_decode[mode](
+                seg_logit,
+                seg_label,
+                weight=seg_weight,
+                features=features,
+                ignore_index=self.ignore_index)
+        else:
+            loss['loss_seg'] = self.loss_decode[mode](
+                seg_logit,
+                seg_label,
+                weight=seg_weight,
+                ignore_index=self.ignore_index)
         loss['acc_seg'] = accuracy(seg_logit, seg_label)
-        if self.debug and hasattr(self.loss_decode, 'debug_output'):
-            self.debug_output.update(self.loss_decode.debug_output)
+        if self.debug and hasattr(self.loss_decode[mode], 'debug_output'):
+            self.debug_output.update(self.loss_decode[mode].debug_output)
         return loss

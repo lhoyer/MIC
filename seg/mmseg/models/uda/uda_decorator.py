@@ -40,7 +40,7 @@ class UDADecorator(BaseSegmentor):
         self.test_cfg = cfg['model']['test_cfg']
         self.num_classes = cfg['model']['decode_head']['num_classes']
         self.debug_img_interval = self.train_cfg['log_config']['img_interval']
-
+        
     def get_model(self):
         return get_module(self.model)
 
@@ -60,6 +60,7 @@ class UDADecorator(BaseSegmentor):
                       target_img,
                       target_img_metas,
                       return_feat=False,
+                      mode='source',
                       **kwargs):
         """Forward function for training.
 
@@ -77,7 +78,7 @@ class UDADecorator(BaseSegmentor):
             dict[str, Tensor]: a dictionary of loss components
         """
         losses = self.get_model().forward_train(
-            img, img_metas, gt_semantic_seg, return_feat=return_feat)
+            img, img_metas, gt_semantic_seg, return_feat=return_feat, mode=mode)
         return losses
 
     def inference(self, img, img_meta, rescale):

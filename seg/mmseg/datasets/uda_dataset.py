@@ -16,28 +16,44 @@ from mmcv.parallel import DataContainer as DC
 from . import CityscapesDataset
 from .builder import DATASETS
 
+def calculate_frequencies(overall_class_stats, temperature):
+    freq = torch.tensor(list(overall_class_stats.values()))
+    freq = freq / torch.sum(freq)
+    freq = 1 - freq
+    freq = torch.softmax(freq / temperature, dim=-1)
 
-def get_rcs_class_probs(data_root, temperature):
+    return freq
+
+def get_rcs_class_probs(data_root, temperature, per_image=False):
     with open(osp.join(data_root, 'sample_class_stats.json'), 'r') as of:
         sample_class_stats = json.load(of)
     overall_class_stats = {}
+    overall_class_stats_all = {}
     for s in sample_class_stats:
         s.pop('file')
         for c, n in s.items():
             c = int(c)
             if c not in overall_class_stats:
                 overall_class_stats[c] = n
+                overall_class_stats_all[c] = 1
             else:
                 overall_class_stats[c] += n
+                overall_class_stats_all[c] += 1
     overall_class_stats = {
         k: v
         for k, v in sorted(
             overall_class_stats.items(), key=lambda item: item[1])
     }
-    freq = torch.tensor(list(overall_class_stats.values()))
-    freq = freq / torch.sum(freq)
-    freq = 1 - freq
-    freq = torch.softmax(freq / temperature, dim=-1)
+    overall_class_stats_all = {
+        k: overall_class_stats_all[k]
+        for k, _ in sorted(
+            overall_class_stats.items(), key=lambda item: item[1])
+    }
+
+    if per_image:
+        freq = calculate_frequencies(overall_class_stats_all, temperature)
+    else:
+        freq = calculate_frequencies(overall_class_stats, temperature)
 
     return list(overall_class_stats.keys()), freq.numpy()
 
@@ -71,6 +87,9 @@ class UDADataset(object):
 
         self.sync_crop_size = cfg.get('sync_crop_size')
         rcs_cfg = cfg.get('rare_class_sampling')
+        if rcs_cfg is not None:
+            per_image = rcs_cfg['per_image'] if 'per_image' in rcs_cfg else False
+        
         self.rcs_enabled = rcs_cfg is not None
         if self.rcs_enabled:
             self.rcs_class_temp = rcs_cfg['class_temp']
@@ -78,7 +97,7 @@ class UDADataset(object):
             self.rcs_min_pixels = rcs_cfg['min_pixels']
 
             self.rcs_classes, self.rcs_classprob = get_rcs_class_probs(
-                cfg['source']['data_root'], self.rcs_class_temp)
+                cfg['source']['data_root'], self.rcs_class_temp, per_image)
             mmcv.print_log(f'RCS Classes: {self.rcs_classes}', 'mmseg')
             mmcv.print_log(f'RCS ClassProb: {self.rcs_classprob}', 'mmseg')
 
@@ -99,13 +118,14 @@ class UDADataset(object):
                     if pixels > self.rcs_min_pixels:
                         self.samples_with_class[c].append(file.split('/')[-1])
                 assert len(self.samples_with_class[c]) > 0
+            
             self.file_to_idx = {}
             for i, dic in enumerate(self.source.img_infos):
                 file = dic['ann']['seg_map']
                 if isinstance(self.source, CityscapesDataset):
                     file = file.split('/')[-1]
                 self.file_to_idx[file] = i
-
+                        
     def synchronized_crop(self, s1, s2):
         if self.sync_crop_size is None:
             return s1, s2
