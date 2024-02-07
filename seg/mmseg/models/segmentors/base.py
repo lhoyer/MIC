@@ -18,6 +18,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from mmseg.models.utils.dacs_normalization import NormNet
+
 class BaseSegmentor(BaseModule, metaclass=ABCMeta):
     """Base class for segmentors."""
 
@@ -276,45 +278,84 @@ class BaseSegmentor(BaseModule, metaclass=ABCMeta):
                           'result image will be returned')
             return img
 
-class RBFActivation(nn.Module):
-    def __init__(self, scale):
-        super(RBFActivation, self).__init__()
-        self.scale = nn.Parameter(scale)
+# class RBFActivation(nn.Module):
+#     def __init__(self, scale):
+#         super(RBFActivation, self).__init__()
+#         self.scale = nn.Parameter(scale)
         
-    def forward(self, x):
-        return torch.exp(-(x ** 2) / (self.scale ** 2))
+#     def forward(self, x):
+#         return torch.exp(-(x ** 2) / (self.scale ** 2))
     
-class NormNet(nn.Module):
-    def __init__(self):
-        super(NormNet, self).__init__()
-        norm_activation = 'rbf'
-        self.cnn_layers = [3, 16, 16]
-        self.n1 = 16
-        self.k = 1
+# class NormNet(nn.Module):
+#     def __init__(self):
+#         super(NormNet, self).__init__()
+#         norm_activation = 'rbf'
+#         # self.cnn_layers = [3, 16, 16]
+#         # self.n1 = 16
+#         # self.k = 1
+
+#         self.cnn_layers = [3, 128]
+#         self.n1 = 16
+#         self.k = 3
         
-        layers = []
-        for l in range(1, len(self.cnn_layers)):
-            layers.append(nn.Conv2d(self.cnn_layers[l-1], self.cnn_layers[l], kernel_size=self.k, padding=self.k // 2))
+#         layers = []
+#         for l in range(1, len(self.cnn_layers)):
+#             layers.append(nn.Conv2d(self.cnn_layers[l-1], self.cnn_layers[l], kernel_size=self.k, padding=self.k // 2))
             
-            # if exp_config.norm_batch_norm:
-            layers.append(nn.BatchNorm2d(self.cnn_layers[l]))
+#             layers.append(nn.BatchNorm2d(self.cnn_layers[l]))
             
-            if norm_activation == 'elu':
-                layers.append(nn.ELU())
+#             if norm_activation == 'elu':
+#                 layers.append(nn.ELU())
                 
-            elif norm_activation == 'relu':
-                layers.append(nn.ReLU())
+#             elif norm_activation == 'relu':
+#                 layers.append(nn.ReLU())
                 
-            elif norm_activation == 'rbf':
-                init_value = torch.randn(self.cnn_layers[l], 1, 1) * 0.05 + 0.2
-                layers.append(RBFActivation(init_value))
+#             elif norm_activation == 'rbf':
+#                 init_value = torch.randn(self.cnn_layers[l], 1, 1) * 0.05 + 0.2
+#                 layers.append(RBFActivation(init_value))
         
-        self.norm_layers = nn.Sequential(*layers)
-        self.delta_layer = nn.Conv2d(self.cnn_layers[l], 3, kernel_size=self.k, padding=self.k // 2)
+#         self.norm_layers = nn.Sequential(*layers)
+#         self.delta_layer = nn.Conv2d(self.cnn_layers[l], 3, kernel_size=self.k, padding=self.k // 2)
         
-    def forward(self, images):
-        out = images
-        out = self.norm_layers(out)
-        delta = self.delta_layer(out)
-        output = images + delta
-        return output
+#     def forward(self, images):
+#         out = images
+#         out = self.norm_layers(out)
+#         delta = self.delta_layer(out)
+#         output = images + delta
+#         return output
+    
+
+# class Sine(nn.Module):
+#     def __init(self):
+#         super().__init__()
+
+#     def forward(self, input):
+#         # See paper sec. 3.2, final paragraph, and supplement Sec. 1.5 for discussion of factor 30
+#         return torch.sin(30 * input)
+    
+# class NormNet(nn.Module):
+#     def __init__(self):
+#         super(NormNet, self).__init__()
+#         norm_activation = 'rbf'
+#         # self.cnn_layers = [3, 16, 16]
+#         # self.n1 = 16
+#         # self.k = 1
+
+#         self.cnn_layers = [1, 1]
+#         # self.cnn_layers = [1, 16, 1]
+#         self.n1 = 16
+        
+#         layers = []
+#         for l in range(1, len(self.cnn_layers)):
+#             layers.append(nn.Conv2d(self.cnn_layers[l-1], self.cnn_layers[l], kernel_size=1))
+#             if self.cnn_layers[l] != 1:                
+#                 # layers.append(nn.ReLU())
+#                 init_value = torch.randn(self.cnn_layers[l], 1, 1) * 0.05 + 0.2
+#                 layers.append(RBFActivation(init_value))
+#                 # layers.append(Sine())
+
+#         self.norm_layers = nn.Sequential(*layers)
+#         # self.norm_layers = nn.Conv2d(self.cnn_layers[l], 1, kernel_size=1)
+        
+#     def forward(self, images):
+#         return self.norm_layers(images)

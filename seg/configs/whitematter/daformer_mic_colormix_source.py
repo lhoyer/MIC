@@ -22,7 +22,7 @@ _base_ = [
     # GTA->Cityscapes Data Loading
     f'../_base_/datasets/uda_{dataset}_256x256{datatag}.py',
     # Basic UDA Self-Training
-    '../_base_/uda/dacs.py',
+    '../_base_/uda/dacs_colormix.py',
     # AdamW Optimizer
     '../_base_/schedules/adamw.py',
     # Linear Learning Rate Warmup with Subsequent Linear Decay
@@ -53,7 +53,7 @@ loss_decode=dict(type='CrossEntropyLoss',
 #                         ignore_label=0,
 #                         loss_weight=1.0)
 # ========================================
-norm_net=False
+norm_net=True
 model = dict(decode_head=dict(num_classes=num_classes, 
                               loss_decode=loss_decode), 
                                 norm_cfg=norm_net)
@@ -62,7 +62,6 @@ seed = 0
 
 # MIC Parameters
 uda = dict(
-    color_mix={'n_classes': num_classes, 'type': 'source', 'freq': 0.5},
     # Apply masking to color-augmented target images
     mask_mode='separatetrgaug',
     # Use the same teacher alpha for MIC as for DAFormer
@@ -76,9 +75,8 @@ uda = dict(
     # Use random patch masking with a patch size of 64x64
     # and a mask ratio of 0.7
     mask_generator=dict(
-        type='block', mask_ratio=0.7, mask_block_size=64, _delete_=True),
-    pseudo_weight_ignore_top=0,
-    pseudo_weight_ignore_bottom=0)
+        type='block', mask_ratio=0.7, mask_block_size=8, _delete_=True),
+    )
 
 class_temp=0.1
 per_image=False
@@ -109,8 +107,9 @@ checkpoint_config = dict(by_epoch=False, interval=40000, max_keep_ckpts=1)
 evaluation = dict(interval=1000, metric='mDice')
 # Meta Information for Result Analysis
 norm_flag = '-norm' if norm_net else ''
-color_mix_flag = f'-colormix-{uda["color_mix"]["type"]}-{uda["color_mix"]["freq"]:.2f}'
-name = f'{dataset}{datatag}_daformersepaspp5{norm_flag}_mic_{loss_name}{color_mix_flag}'
+
+
+name = f'{dataset}{datatag}_daformersepaspp5{norm_flag}_mic_{loss_name}'
 exp = 'basic'
 name_dataset = f'{dataset}{datatag}'
 name_architecture = 'daformer_sepaspp_mitb5'

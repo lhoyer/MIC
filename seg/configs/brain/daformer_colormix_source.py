@@ -16,7 +16,7 @@ loss_name = 'CE'
 # loss_name = 'CEmem'
 # loss_name = 'CEmemIgnore'
 
-norm_net = False
+norm_net = True
 
 _base_ = [
     '../_base_/default_runtime.py',
@@ -57,7 +57,7 @@ model = dict(decode_head=dict(num_classes=num_classes,
 seed = 0
 # Modifications to Basic UDA
 uda = dict(
-    color_mix={'n_classes': num_classes, 'type': 'source', 'freq': 0.5, 'norm_type': 'test'},
+    color_mix={'n_classes': num_classes, 'type': 'source', 'freq': 0.5, 'norm_type': 'multilayer128'},
     # Increased Alpha
     alpha=0.999,
     # Thing-Class Feature Distance
@@ -72,7 +72,7 @@ uda = dict(
 class_temp=0.1
 per_image=False
 data = dict(
-    samples_per_gpu=4,
+    samples_per_gpu=2,
     workers_per_gpu=2,
     train=dict(
         # Rare Class Sampling

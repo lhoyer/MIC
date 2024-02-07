@@ -9,6 +9,7 @@ dataset_type = 'BrainDataset'
 data_root = 'da_data/brain/hcp1/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+
 crop_size = (256, 256)
 # img_scale = (320, 320)
 img_scale = (256, 256)

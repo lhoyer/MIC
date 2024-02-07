@@ -5,6 +5,7 @@
 # ---------------------------------------------------------------
 
 # dataset settings
+data_root = '/itet-stor/klanna/bmicdatasets_bmicnas02/Sharing/klanna/datasets/self-driving/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 crop_size = (1024, 1024)
@@ -55,25 +56,25 @@ data = dict(
         type='UDADataset',
         source=dict(
             type='CityscapesDataset',
-            data_root='data/cityscapes/',
+            data_root=f'{data_root}/cityscapes/',
             img_dir='leftImg8bit/train',
             ann_dir='gtFine/train',
             pipeline=cityscapes_train_pipeline),
         target=dict(
             type='DarkZurichDataset',
-            data_root='data/dark_zurich/',
+            data_root=f'{data_root}/dark_zurich/train/',
             img_dir='rgb_anon/train/night/',
             ann_dir='gt/train/night/',
             pipeline=dark_zurich_train_pipeline)),
     val=dict(
         type='DarkZurichDataset',
-        data_root='data/dark_zurich/',
+        data_root=f'{data_root}/dark_zurich/val/',
         img_dir='rgb_anon/val',
         ann_dir='gt/val',
         pipeline=test_pipeline),
     test=dict(
         type='DarkZurichDataset',
-        data_root='data/dark_zurich/',
+        data_root=f'{data_root}/dark_zurich/val/',
         img_dir='rgb_anon/val',
         ann_dir='gt/val',
         pipeline=test_pipeline))

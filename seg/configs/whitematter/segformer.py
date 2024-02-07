@@ -62,6 +62,7 @@ seed = 0
 # Modifications to Basic UDA
 uda = dict(
     # Increased Alpha
+    colormix={'type': 'none'},
     alpha=0.999,
     # Thing-Class Feature Distance
     # imnet_feature_dist_lambda=0.005,
@@ -99,9 +100,8 @@ runner = dict(type='IterBasedRunner', max_iters=40000)
 checkpoint_config = dict(by_epoch=False, interval=40000, max_keep_ckpts=1)
 evaluation = dict(interval=1000, metric='mDice')
 # Meta Information for Result Analysis
-color_mix_flag = '-colormix' if uda['color_mix'] else ''
 norm_flag = '-norm' if norm_net else ''
-name = f'{dataset}{datatag}_segformer101{norm_flag}_{loss_name}{color_mix_flag}'
+name = f'{dataset}{datatag}_segformer101{norm_flag}_{loss_name}'
 exp = 'basic'
 name_dataset = f'{dataset}{datatag}'
 name_architecture = 'segformer_r101'

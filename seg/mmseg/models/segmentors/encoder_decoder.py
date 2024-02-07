@@ -53,7 +53,7 @@ class EncoderDecoder(BaseSegmentor):
         self.norm_cfg = norm_cfg
         if self.norm_cfg is not None and self.norm_cfg:
             print('Using normalization net')
-            self.normalization_net = NormNet()
+            self.normalization_net = NormNet(norm_activation = 'linear', cnn_layers = [1, 1])
         else:
             self.normalization_net = None
 
@@ -84,9 +84,9 @@ class EncoderDecoder(BaseSegmentor):
             else:
                 self.auxiliary_head = builder.build_head(auxiliary_head)
 
-    def extract_feat(self, img, with_img=False):
+    def extract_feat(self, img, normalize=False, with_img=False):
         """Extract features from images."""
-        if self.normalization_net is not None:
+        if (self.normalization_net is not None) and normalize:
             x = self.backbone(self.normalization_net(img))
         else:
             x = self.backbone(img)
@@ -111,10 +111,10 @@ class EncoderDecoder(BaseSegmentor):
 
         return out
 
-    def encode_decode(self, img, img_metas, upscale_pred=True):
+    def encode_decode(self, img, img_metas, normalize=False, upscale_pred=True):
         """Encode images with backbone and decode into a semantic segmentation
         map of the same size as input."""
-        x = self.extract_feat(img)
+        x = self.extract_feat(img, normalize)
         out = self._decode_head_forward_test(x, img_metas)
         
         if upscale_pred:
@@ -125,12 +125,12 @@ class EncoderDecoder(BaseSegmentor):
                 align_corners=self.align_corners)
         return out
 
-    def forward_with_aux(self, img, img_metas):
+    def forward_with_aux(self, img, img_metas, normalize=False):
         self.update_debug_state()
 
         ret = {}
 
-        x = self.extract_feat(img)
+        x = self.extract_feat(img, normalize)
         out = self.decode_head.forward_test(x, img_metas, self.test_cfg)
         out = resize(
             input=out,
@@ -217,6 +217,7 @@ class EncoderDecoder(BaseSegmentor):
                       img,
                       img_metas,
                       gt_semantic_seg,
+                      normalize=False,
                       seg_weight=None,
                       return_feat=False,
                       return_logits=False,
@@ -238,7 +239,7 @@ class EncoderDecoder(BaseSegmentor):
         """
         self.update_debug_state()
 
-        x = self.extract_feat(img)
+        x = self.extract_feat(img, normalize)
 
         losses = dict()
         if return_feat:

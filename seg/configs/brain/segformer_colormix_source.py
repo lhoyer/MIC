@@ -16,7 +16,7 @@ loss_name = 'CE'
 # loss_name = 'CEmem'
 # loss_name = 'CEmemIgnore'
 
-norm_net = True
+norm_net = False
 
 _base_ = [
     '../_base_/default_runtime.py',
@@ -25,7 +25,7 @@ _base_ = [
     # GTA->Cityscapes Data Loading
     f'../_base_/datasets/uda_{dataset}_256x256{datatag}.py',
     # Basic UDA Self-Training
-    '../_base_/uda/dacs.py',
+    '../_base_/uda/dacs_colormix.py',
     # AdamW Optimizer
     '../_base_/schedules/adamw.py',
     # Linear Learning Rate Warmup with Subsequent Linear Decay
@@ -57,17 +57,9 @@ model = dict(decode_head=dict(num_classes=num_classes,
 seed = 0
 # Modifications to Basic UDA
 uda = dict(
-    color_mix={'n_classes': num_classes, 'type': 'source', 'freq': 0.5, 'norm_type': 'test'},
-    # Increased Alpha
-    alpha=0.999,
-    # Thing-Class Feature Distance
-    # imnet_feature_dist_lambda=0.005,
-    # imnet_feature_dist_classes=[6, 7, 11, 12, 13, 14, 15, 16, 17, 18],
-    # imnet_feature_dist_scale_min_ratio=0.75,
-    # Pseudo-Label Crop
+    color_mix=dict(freq=1.0),
     debug_img_interval=100,
-    pseudo_weight_ignore_top=0,
-    pseudo_weight_ignore_bottom=0)
+)
 
 class_temp=0.1
 per_image=False
@@ -84,7 +76,7 @@ data = dict(
     ))
 # Optimizer Hyperparameters
 optimizer_config = None
-optimizer = dict(
+optimizer = dict(    
     lr=6e-05,
     paramwise_cfg=dict(
         custom_keys=dict(
@@ -94,14 +86,12 @@ optimizer = dict(
 n_gpus = 1
 runner = dict(type='IterBasedRunner', max_iters=40000)
 # Logging Configuration
-checkpoint_config = dict(by_epoch=False, interval=40000, max_keep_ckpts=1)
-evaluation = dict(interval=100, metric='mDice')
-
+checkpoint_config = dict(by_epoch=False, interval=4000, max_keep_ckpts=1)
+evaluation = dict(interval=1000, metric='mDice')
 
 # Meta Information for Result Analysis
-color_mix_flag = f'-colormix-{uda["color_mix"]["type"]}-{uda["color_mix"]["freq"]:.2f}-{uda["color_mix"]["norm_type"]}'
 norm_flag = '-norm' if norm_net else ''
-name = f'{dataset}{datatag}_segformer101{norm_flag}_{loss_name}{color_mix_flag}'
+name = f'{dataset}{datatag}_segformer101{norm_flag}_{loss_name}-inside-sigmoid-weight_decay'
 exp = 'basic'
 name_dataset = f'{dataset}{datatag}'
 name_architecture = 'segformer_r101'

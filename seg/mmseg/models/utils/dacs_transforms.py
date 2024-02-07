@@ -6,110 +6,111 @@ import kornia
 import numpy as np
 import torch
 import torch.nn as nn
-import torchvision.transforms.functional as F
-import cv2 as cv
-import ot
-from scipy.optimize import linear_sum_assignment
-from skimage.exposure import match_histograms
+from mmseg.models.utils.dacs_normalization import NormNet
+from torch import nn, optim
+
+# import torchvision.transforms.functional as F
+# import cv2 as cv
+# import ot
+# from scipy.optimize import linear_sum_assignment
+# from skimage.exposure import match_histograms
+# from torchvision.transforms.functional import equalize
 
 class ClasswiseMultAugmenter:
-    def __init__(self, n_classes, norm_type):
+    def __init__(self, n_classes, norm_type: str, suppress_bg: bool=True, device: str="cuda:0"):
         self.n_classes = n_classes
-        # self.device = device
-        self.source_mean = -torch.ones(n_classes, 3)
-        self.target_mean = -torch.ones(n_classes, 3)
+        self.device = device
+        self.source_mean = -torch.ones(n_classes, 1)
+        self.target_mean = -torch.ones(n_classes, 1)
         self.coef = torch.zeros(n_classes, 3)
 
-        # self.coef_src = torch.ones(n_classes, n_classes, 3)
-        # self.coef_tgt = torch.ones(n_classes, n_classes, 3)
-        # np.full((n_classes, n_classes, 3), np.nan)
         self.kernel_size = 3
         self.sigma = 0.5
         self.lambda_reg = 0.1
-        
-        self.matching_method = "sinkhorn"
+        self.suppress_bg = suppress_bg
+        # self.matching_method = "sinkhorn"
 
+        self.learning_rate = 6e-05
+        # self.learning_rate = 0.01
+        self.normalization_net = NormNet(norm_activation='rbf', cnn_layers = [1, 1]).to(device)
+        self.criterion = nn.MSELoss()
+        self.optimizer = optim.Adam(self.normalization_net.parameters(), lr=self.learning_rate, weight_decay=0.01)
+
+    def optimization_step(self, img_original, img_segm_hist, gt_semantic_seg):               
+        self.optimizer.zero_grad()
+        # print(img_original.device, img_segm_hist.device, gt_semantic_seg.device)
+        # print(next(self.normalization_net.parameters()).device)
+        # quit()
+
+        img_polished = self.normalization_net(img_original[:, 0, :, :].unsqueeze(1)) 
+        
+        if self.suppress_bg:
+             ## automatically detect background value
+            # background_val = img_original[0, 0, 0, 0].item()
+            # foreground_mask = img_original[:, 0, :, :].unsqueeze(1) > 0
+            # background_mask = img_original[:, 0, :, :].unsqueeze(1) == background_val
+            
+            foreground_mask = gt_semantic_seg > 0
+            background_mask = gt_semantic_seg == 0
+
+            loss = self.criterion(img_polished[foreground_mask], img_segm_hist[foreground_mask].to(img_polished.device))
+        else:
+            loss = self.criterion(img_polished, img_segm_hist.to(img_polished.device))       
+
+        loss.backward()
+        self.optimizer.step()
+
+        min_hist, max_hist = img_segm_hist[foreground_mask].min().item(), img_segm_hist[foreground_mask].max().item()
+
+        # img = img_polished.detach()
+        del img_polished
+        with torch.no_grad():
+            img = self.normalization_net(img_original[:, 0, :, :].unsqueeze(1)).detach()
+            
+        # img[foreground_mask] += max_hist - img[foreground_mask].max().item()
+
+        if self.suppress_bg:
+            img[background_mask] = img_segm_hist[background_mask]
+            # img[background_mask] = img_original[:, 0, :, :].unsqueeze(1)[background_mask].mean().item()
+
+        img = img.repeat(1, 3, 1, 1)
+
+        return img, loss.item()
+    
     def update(self, source, target, mask_src, mask_tgt, weight_tgt, param):
         mean, std = param["mean"], param["std"]
         denorm_(source, mean, std)
         denorm_(target, mean, std)
 
-        src_labels = mask_src.unique()
-        src_labels = src_labels[src_labels != 0]
-        src_labels = [s.item() for s in src_labels]
+        c = 0
+        for i in range(self.n_classes):
+            source_mean = source[:, c, :, :][mask_src.squeeze(1) == i]
+            target_mean = target[:, c, :, :][(mask_tgt.squeeze(1) == i) & (weight_tgt.squeeze(1) > 0)]
 
-        tgt_labels = mask_tgt[weight_tgt > 0].unique()
-        tgt_labels = tgt_labels[tgt_labels != 0]
-        tgt_labels = [t.item() for t in tgt_labels]
+            if (source_mean.shape[0] != 0):
+                self.source_mean[i, c] = source_mean.mean().item()
 
-        # for c in range(3):
-        #     for i in src_labels:
-        #         for j in src_labels:
-        #             self.coef_src[i, j, c] = (
-        #                 source[:, c, :, :][mask_src.squeeze(1) == j].mean().item()
-        #                 / source[:, c, :, :][mask_src.squeeze(1) == i].mean().item()
-        #             )
+            if (target_mean.shape[0] != 0):
+                self.target_mean[i, c] = target_mean.mean().item()
 
-        #     for i in tgt_labels:
-        #         for j in tgt_labels:
-        #             self.coef_tgt[i, j, c] = (
-        #                 target[:, c, :, :][
-        #                     (mask_tgt.squeeze(1) == j) & (weight_tgt.squeeze(1) > 0)
-        #                 ]
-        #                 .mean()
-        #                 .item()
-        #                 / target[:, c, :, :][mask_tgt.squeeze(1) == i].mean().item()
-        #             )
-
-        for i in range(1, self.n_classes):
-            for c in range(3):
-                source_mean = source[:, c, :, :][mask_src.squeeze(1) == i]
-                target_mean = target[:, c, :, :][(mask_tgt.squeeze(1) == i) & (weight_tgt.squeeze(1) > 0)]
-
-                if (source_mean.shape[0] != 0):
-                    self.source_mean[i, c] = source_mean.mean().item()
-
-                if (target_mean.shape[0] != 0):
-                    self.target_mean[i, c] = target_mean.mean().item()
-
-                if (self.source_mean[i, c] != -1) and (self.target_mean[i, c] != -1):
-                    self.coef[i, c] = self.target_mean[i, c] - self.source_mean[i, c]
+            if (self.source_mean[i, c] != -1) and (self.target_mean[i, c] != -1):
+                self.coef[i, c] = self.target_mean[i, c] - self.source_mean[i, c]
                     
         renorm_(source, mean, std)
         renorm_(target, mean, std)
 
-    def color_mix(self, data, mask, param, img_tgt):
-        data_input = data.clone()
+    def color_mix(self, data, mask, mean, std):
         data_ = data.clone()
-        img_tgt_ = img_tgt.clone()
 
-        mean, std = param["mean"], param["std"]
         denorm_(data_, mean, std)
-        denorm_(data_input, mean, std)
-        denorm_(img_tgt_, mean, std)
 
-        data_.clamp_(0, 1)
-
-        # labels = [c.item() for c in mask.unique() if c != 0]
-        # ref_class = np.random.choice(labels)
-        # for c in range(3):
-        #     old_min = data_[:, c, :, :][mask.squeeze(1) != 0].min()
-        #     for cl in labels:
-        #         if cl != ref_class:
-        #             alpha = self.coef_src[ref_class, cl, c]
-        #             beta = self.coef_tgt[ref_class, cl, c]
-        #             old_mean = data_[:, c, :, :][mask.squeeze(1) == cl].mean().item()
-        #             new_mean = old_mean * beta / alpha
-        #             delta = new_mean - old_mean
-        #             # print(data_[:, c, :, :][mask.squeeze(1) == cl].shape)
-        #             data_[:, c, :, :][mask.squeeze(1) == cl] += delta
-
-        #     new_min = data_[:, c, :, :][mask.squeeze(1) != 0].min()
-        #     data_[:, c, :, :][mask.squeeze(1) != 0] += old_min - new_min
-
-        for i in range(1, self.n_classes):
+        for i in range(self.n_classes):
             for c in range(3):
-                data_[:, c, :, :][mask.squeeze(1) == i] += self.coef[i, c]
+                old_min = data_[:, c, :, :][mask.squeeze(1) != 0].min()
+                data_[:, c, :, :][mask.squeeze(1) == i] += self.coef[i, 0]
+                new_min = data_[:, c, :, :][mask.squeeze(1) != 0].min()
+
+                data_[:, c, :, :][mask.squeeze(1) != 0] += old_min - new_min
             
         min_val = data_.min()
         data_ -= min_val
@@ -137,141 +138,55 @@ class ClasswiseMultAugmenter:
 
         renorm_(data_, mean, std)
 
-        return data_
+        return data_[:, 0, :, :].unsqueeze(1)
 
-    def _hungarian_match_cost(self, source, template, img_tgt):
-        source = cv.blur(source, (2, 2))
+    # def _hungarian_match_cost(self, source, template, img_tgt):
+    #     source = cv.blur(source, (2, 2))
 
-        img_8b = np.array(source * 255).astype(np.uint8)
+    #     img_8b = np.array(source * 255).astype(np.uint8)
 
-        template = match_histograms(template, img_tgt, channel_axis=-1)
-        template = cv.blur(template, (3, 3))
-        template_8b = np.array(template * 255).astype(np.uint8)
+    #     template = match_histograms(template, img_tgt, channel_axis=-1)
+    #     template = cv.blur(template, (3, 3))
+    #     template_8b = np.array(template * 255).astype(np.uint8)
         
-        npixels = 256
-        cost_map = np.zeros((npixels, npixels))
-        for i in range(img_8b.shape[0]):
-            for j in range(img_8b.shape[1]):
-                c1 = img_8b[i, j]
-                c2 = template_8b[i, j]
-                if c1 != 0 and c2 != 0:
-                    cost_map[c1, c2] += 1
-        cost_map /= cost_map.max()
-        cost_map = 1 - cost_map
-        cost_map[0, 0] = 0
+    #     npixels = 256
+    #     cost_map = np.zeros((npixels, npixels))
+    #     for i in range(img_8b.shape[0]):
+    #         for j in range(img_8b.shape[1]):
+    #             c1 = img_8b[i, j]
+    #             c2 = template_8b[i, j]
+    #             if c1 != 0 and c2 != 0:
+    #                 cost_map[c1, c2] += 1
+    #     cost_map /= cost_map.max()
+    #     cost_map = 1 - cost_map
+    #     cost_map[0, 0] = 0
 
-        cost_map = cv.blur(cost_map, (2, 2))
+    #     cost_map = cv.blur(cost_map, (2, 2))
 
-        if self.matching_method == "sinkhorn":
-            transport_matrix = ot.sinkhorn(
-                np.ones(cost_map.shape[0]),
-                np.ones(cost_map.shape[1]),
-                cost_map,
-                self.lambda_reg,
-            )
-            row_ind, col_ind = np.unravel_index(
-                np.argmax(transport_matrix, axis=1), transport_matrix.shape
-            )
-        elif self.matching_method == "hungarian":
-            row_ind, col_ind = linear_sum_assignment(cost_map)
-        else:
-            raise NotImplementedError
+    #     if self.matching_method == "sinkhorn":
+    #         transport_matrix = ot.sinkhorn(
+    #             np.ones(cost_map.shape[0]),
+    #             np.ones(cost_map.shape[1]),
+    #             cost_map,
+    #             self.lambda_reg,
+    #         )
+    #         row_ind, col_ind = np.unravel_index(
+    #             np.argmax(transport_matrix, axis=1), transport_matrix.shape
+    #         )
+    #     elif self.matching_method == "hungarian":
+    #         row_ind, col_ind = linear_sum_assignment(cost_map)
+    #     else:
+    #         raise NotImplementedError
         
-        img_8b_new = np.zeros(img_8b.shape)
-        for i in range(img_8b.shape[0]):
-            for j in range(img_8b.shape[1]):
-                src_val = img_8b[i, j]
-                img_8b_new[i, j] = col_ind[src_val]
+    #     img_8b_new = np.zeros(img_8b.shape)
+    #     for i in range(img_8b.shape[0]):
+    #         for j in range(img_8b.shape[1]):
+    #             src_val = img_8b[i, j]
+    #             img_8b_new[i, j] = col_ind[src_val]
 
-        img_8b_new /= 255
+    #     img_8b_new /= 255
 
-        return torch.Tensor(img_8b_new)
-
-
-# class ClasswiseMultAugmenter:
-#     def __init__(self, n_classes, norm_type):
-#         self.n_classes = n_classes
-#         # self.device = device
-#         self.source_mean = -torch.ones(n_classes, 3)
-#         self.target_mean = -torch.ones(n_classes, 3)
-#         self.coef = torch.zeros(n_classes, 3)
-#         self.norm_type = norm_type
-#         self.kernel_size = 3
-#         self.sigma = 0.8
-
-#     def update(self, source, target, mask_src, mask_tgt, weight_tgt, param, eps=1e-8):
-#         mean, std = param['mean'], param['std']
-#         denorm_(source, mean, std)
-#         denorm_(target, mean, std)
-
-#         for i in range(1, self.n_classes):
-#             for c in range(3):
-#                 source_mean = source[:, c, :, :][mask_src.squeeze(1) == i]
-#                 target_mean = target[:, c, :, :][(mask_tgt.squeeze(1) == i) & (weight_tgt.squeeze(1) > 0)]
-
-#                 if (source_mean.shape[0] != 0):
-#                     self.source_mean[i, c] = source_mean.mean().item()
-
-#                 if (target_mean.shape[0] != 0):
-#                     self.target_mean[i, c] = target_mean.mean().item()
-
-#                 if (self.source_mean[i, c] != -1) and (self.target_mean[i, c] != -1):
-#                     self.coef[i, c] = self.target_mean[i, c] - self.source_mean[i, c]
-
-#                 # if not ((source_mean == 0) or (abs(target_mean) < eps)):
-#                     # coef = target_mean / source_mean
-
-#                 # print(f'Class {i}\tSource mean: {source_mean:.5f},\tTarget mean: {target_mean:.5f},\tCoef: {self.coef[i, c]:.5f}')
-
-#         renorm_(source, mean, std)
-#         renorm_(target, mean, std)
-
-#     # def color_mix(self, data, mask, param):
-#     #     data_ = data.clone()
-
-#     #     mean, std = param['mean'], param['std']
-#     #     denorm_(data_, mean, std)
-#     #     data_.clamp_(0, 1)
-
-#     #     for i in range(1, self.n_classes):
-#     #         for c in range(3):
-#     #             data_[:, c, :, :][mask.squeeze(1) == i] *= self.coef[i, c]
-
-#     #     renorm_(data_, mean, std)
-
-#     #     return data_
-
-#     def color_mix(self, data, mask, param):
-#         data_ = data.clone()
-#         mean, std = param['mean'], param['std']
-#         denorm_(data_, mean, std)
-#         data_.clamp_(0, 1)
-
-#         if self.norm_type == 'addperclass':
-#             for i in range(1, self.n_classes):
-#                 for c in range(3):
-#                     data_[:, c, :, :][mask.squeeze(1) == i] += self.coef[i, c]
-#         elif self.norm_type == 'multperclass':
-#             raise NotImplementedError
-#         elif self.norm_type == 'GT':
-#             data_ *= -1
-#             # redefine background
-#             data_[data_ == 0] = -1.5
-
-#             # normalize image
-#             min_val = data_.min()
-#             max_val = data_.max()
-#             data_ -= min_val
-#             if max_val - min_val != 0:
-#                 data_ /= (max_val - min_val)
-#         else:
-#             raise NotImplementedError
-
-#         data_ = F.gaussian_blur(data_, self.kernel_size, self.sigma)
-
-#         renorm_(data_, mean, std)
-
-#         return data_
+    #     return torch.Tensor(img_8b_new)
 
 
 def strong_transform(param, data=None, target=None):
@@ -308,6 +223,8 @@ def get_mean_std(img_metas, dev):
 def denorm(img, mean, std):
     return img.mul(std).add(mean) / 255.0
 
+def renorm(img, mean, std):
+    return img.mul_(255.0).sub_(mean).div_(std)
 
 def denorm_(img, mean, std):
     img.mul_(std).add_(mean).div_(255.0)
