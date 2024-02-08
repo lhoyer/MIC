@@ -368,11 +368,12 @@ class DACS(UDADecorator):
             if self.color_mix['suppress_bg']:
                 img[background_mask] = img_segm_hist[background_mask]
                 # img[background_mask] = img_original[:, 0, :, :].unsqueeze(1)[background_mask].mean().item()
+                
+            img = img.repeat(1, 3, 1, 1)
         else:
-            img = img_segm_hist
+            img = img_original
 
-        img = img.repeat(1, 3, 1, 1)
-
+        
 
         if self.local_iter % 20 == 0:
             # for i in range(self.contrast_flip.n_classes):
