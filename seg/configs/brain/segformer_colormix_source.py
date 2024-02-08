@@ -9,93 +9,74 @@
 
 # WMH datasets
 datatag = ''
-dataset = 'brain_hcp1-hcp2'
+# dataset = 'brain_hcp1-hcp2'
+dataset = 'brain_abidec-hcp2'
 num_classes=15
 
-loss_name = 'CE'
-# loss_name = 'CEmem'
-# loss_name = 'CEmemIgnore'
-
-norm_net = False
-
 _base_ = [
-    '../_base_/default_runtime.py',
+    "../_base_/default_runtime.py",
     # DAFormer Network Architecture
-    '../_base_/models/segformer_r101.py',
+    "../_base_/models/segformer_r101.py",
     # GTA->Cityscapes Data Loading
-    f'../_base_/datasets/uda_{dataset}_256x256{datatag}.py',
+    f"../_base_/datasets/uda_{dataset}_256x256{datatag}.py",
     # Basic UDA Self-Training
-    '../_base_/uda/dacs_colormix.py',
+    "../_base_/uda/dacs_colormix.py",
     # AdamW Optimizer
-    '../_base_/schedules/adamw.py',
+    "../_base_/schedules/adamw.py",
     # Linear Learning Rate Warmup with Subsequent Linear Decay
-    '../_base_/schedules/poly10warm.py'
+    "../_base_/schedules/poly10warm.py",
 ]
-# Random Seed
-if loss_name == 'CEmem':
-    loss_decode=dict(type='ContrastMemoryBankCELoss', 
-                        use_sigmoid=False, 
-                        memory_bank_size=2048,
-                        # memory_bank_size=512,
-                        ignore_label=-1,
-                        loss_weight=1.0)
-elif loss_name == 'CEmemIgnore':
-    loss_decode=dict(type='ContrastMemoryBankCELoss', 
-                        use_sigmoid=False, 
-                        memory_bank_size=2048,
-                        ignore_label=0,
-                        loss_weight=1.0)
-else:
-    loss_decode=dict(type='CrossEntropyLoss', 
-                            use_sigmoid=False, 
-                            loss_weight=1.0)
 
-model = dict(decode_head=dict(num_classes=num_classes, 
-                              loss_decode=loss_decode), 
-                                norm_cfg=norm_net)
+uda = dict(color_mix=dict(freq=1.0, suppress_bg=True))
+# norm_net = dict(norm_activation="linear", layers=[1, 1])
+norm_net = dict(norm_activation="relu", layers=[1, 128, 1])
+
+model = dict(
+    decode_head=dict(num_classes=num_classes),
+    norm_cfg=norm_net,
+)
 
 seed = 0
 # Modifications to Basic UDA
-uda = dict(
-    color_mix=dict(freq=1.0),
-    debug_img_interval=100,
-)
-
-class_temp=0.1
-per_image=False
+class_temp = 0.1
+per_image = False
 data = dict(
-    samples_per_gpu=4,
+    samples_per_gpu=8,
     workers_per_gpu=2,
     train=dict(
         # Rare Class Sampling
         rare_class_sampling=dict(
-            min_pixels=4, 
-            class_temp=class_temp, 
-            min_crop_ratio=0.5,
-            per_image=per_image)
-    ))
+            min_pixels=4, class_temp=class_temp, min_crop_ratio=0.5, per_image=per_image
+        )
+    ),
+)
 # Optimizer Hyperparameters
 optimizer_config = None
-optimizer = dict(    
+optimizer = dict(
     lr=6e-05,
     paramwise_cfg=dict(
         custom_keys=dict(
             head=dict(lr_mult=10.0),
             pos_block=dict(decay_mult=0.0),
-            norm=dict(decay_mult=0.0))))
-n_gpus = 1
-runner = dict(type='IterBasedRunner', max_iters=40000)
-# Logging Configuration
-checkpoint_config = dict(by_epoch=False, interval=4000, max_keep_ckpts=1)
-evaluation = dict(interval=1000, metric='mDice')
+            norm=dict(decay_mult=0.0),
+        )
+    ),
+)
 
+n_gpus = 1
+runner = dict(type="IterBasedRunner", max_iters=30000)
+# Logging Configuration
+checkpoint_config = dict(by_epoch=False, interval=1000, max_keep_ckpts=1)
+evaluation = dict(interval=1000, metric="mDice")
 # Meta Information for Result Analysis
-norm_flag = '-norm' if norm_net else ''
-name = f'{dataset}{datatag}_segformer101{norm_flag}_{loss_name}-inside-sigmoid-weight_decay'
-exp = 'basic'
-name_dataset = f'{dataset}{datatag}'
-name_architecture = 'segformer_r101'
-name_encoder = 'ResNetV1c'
-name_decoder = 'SegFormerHead'
-name_uda = 'dacs'
-name_opt = 'adamw_6e-05_pmTrue_poly10warm_1x2_40k'
+
+num_norm_layers = len(norm_net["layers"])-2
+norm = f"{norm_net['norm_activation']}{num_norm_layers}"
+name = f"{dataset}{datatag}_segformer101_{norm}"
+exp = "basic"
+name_dataset = f"{dataset}{datatag}"
+name_architecture = "segformer_r101"
+name_encoder = "ResNetV1c"
+name_decoder = "SegFormerHead"
+name_uda = "dacs"
+name_opt = "adamw_6e-05_pmTrue_poly10warm_1x2_30k"

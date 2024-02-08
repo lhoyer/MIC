@@ -30,52 +30,52 @@ class ClasswiseMultAugmenter:
         self.suppress_bg = suppress_bg
         # self.matching_method = "sinkhorn"
 
-        self.learning_rate = 6e-05
+        # self.learning_rate = 6e-05
         # self.learning_rate = 0.01
-        self.normalization_net = NormNet(norm_activation='rbf', cnn_layers = [1, 1]).to(device)
-        self.criterion = nn.MSELoss()
-        self.optimizer = optim.Adam(self.normalization_net.parameters(), lr=self.learning_rate, weight_decay=0.01)
+        # self.normalization_net = NormNet(norm_activation='rbf', cnn_layers = [1, 1]).to(device)
+        # self.criterion = nn.MSELoss()
+        # self.optimizer = optim.Adam(self.normalization_net.parameters(), lr=self.learning_rate, weight_decay=0.01)
 
-    def optimization_step(self, img_original, img_segm_hist, gt_semantic_seg):               
-        self.optimizer.zero_grad()
-        # print(img_original.device, img_segm_hist.device, gt_semantic_seg.device)
-        # print(next(self.normalization_net.parameters()).device)
-        # quit()
+    # def optimization_step(self, img_original, img_segm_hist, gt_semantic_seg):               
+    #     self.optimizer.zero_grad()
+    #     # print(img_original.device, img_segm_hist.device, gt_semantic_seg.device)
+    #     # print(next(self.normalization_net.parameters()).device)
+    #     # quit()
 
-        img_polished = self.normalization_net(img_original[:, 0, :, :].unsqueeze(1)) 
+    #     img_polished = self.normalization_net(img_original[:, 0, :, :].unsqueeze(1)) 
         
-        if self.suppress_bg:
-             ## automatically detect background value
-            # background_val = img_original[0, 0, 0, 0].item()
-            # foreground_mask = img_original[:, 0, :, :].unsqueeze(1) > 0
-            # background_mask = img_original[:, 0, :, :].unsqueeze(1) == background_val
+    #     if self.suppress_bg:
+    #          ## automatically detect background value
+    #         # background_val = img_original[0, 0, 0, 0].item()
+    #         # foreground_mask = img_original[:, 0, :, :].unsqueeze(1) > 0
+    #         # background_mask = img_original[:, 0, :, :].unsqueeze(1) == background_val
             
-            foreground_mask = gt_semantic_seg > 0
-            background_mask = gt_semantic_seg == 0
+    #         foreground_mask = gt_semantic_seg > 0
+    #         background_mask = gt_semantic_seg == 0
 
-            loss = self.criterion(img_polished[foreground_mask], img_segm_hist[foreground_mask].to(img_polished.device))
-        else:
-            loss = self.criterion(img_polished, img_segm_hist.to(img_polished.device))       
+    #         loss = self.criterion(img_polished[foreground_mask], img_segm_hist[foreground_mask].to(img_polished.device))
+    #     else:
+    #         loss = self.criterion(img_polished, img_segm_hist.to(img_polished.device))       
 
-        loss.backward()
-        self.optimizer.step()
+    #     loss.backward()
+    #     self.optimizer.step()
 
-        min_hist, max_hist = img_segm_hist[foreground_mask].min().item(), img_segm_hist[foreground_mask].max().item()
+    #     min_hist, max_hist = img_segm_hist[foreground_mask].min().item(), img_segm_hist[foreground_mask].max().item()
 
-        # img = img_polished.detach()
-        del img_polished
-        with torch.no_grad():
-            img = self.normalization_net(img_original[:, 0, :, :].unsqueeze(1)).detach()
+    #     # img = img_polished.detach()
+    #     del img_polished
+    #     with torch.no_grad():
+    #         img = self.normalization_net(img_original[:, 0, :, :].unsqueeze(1)).detach()
             
-        # img[foreground_mask] += max_hist - img[foreground_mask].max().item()
+    #     # img[foreground_mask] += max_hist - img[foreground_mask].max().item()
 
-        if self.suppress_bg:
-            img[background_mask] = img_segm_hist[background_mask]
-            # img[background_mask] = img_original[:, 0, :, :].unsqueeze(1)[background_mask].mean().item()
+    #     if self.suppress_bg:
+    #         img[background_mask] = img_segm_hist[background_mask]
+    #         # img[background_mask] = img_original[:, 0, :, :].unsqueeze(1)[background_mask].mean().item()
 
-        img = img.repeat(1, 3, 1, 1)
+    #     img = img.repeat(1, 3, 1, 1)
 
-        return img, loss.item()
+    #     return img, loss.item()
     
     def update(self, source, target, mask_src, mask_tgt, weight_tgt, param):
         mean, std = param["mean"], param["std"]

@@ -8,11 +8,12 @@
 # num_classes=15
 
 # WMH datasets
-# WMH datasets
-datatag = ''
-# dataset = 'brain_hcp1-hcp2'
-dataset = 'brain_abidec-hcp2'
-num_classes=15
+datatag = ""
+dataset = "wmh_nuhs-umc"
+# dataset = 'wmh_umc_source'
+# dataset = 'wmh_nuhs_source'
+# dataset = 'wmh_vu_source'
+num_classes = 2
 
 _base_ = [
     "../_base_/default_runtime.py",
@@ -21,34 +22,27 @@ _base_ = [
     # GTA->Cityscapes Data Loading
     f"../_base_/datasets/uda_{dataset}_256x256{datatag}.py",
     # Basic UDA Self-Training
-    "../_base_/uda/dacs.py",
+    "../_base_/uda/dacs_colormix.py",
     # AdamW Optimizer
     "../_base_/schedules/adamw.py",
     # Linear Learning Rate Warmup with Subsequent Linear Decay
     "../_base_/schedules/poly10warm.py",
 ]
 
-model = dict(decode_head=dict(num_classes=num_classes))
+uda = dict(color_mix=dict(freq=0.5, suppress_bg=False))
+norm_net = dict(norm_activation="relu", layers=[1, 32, 1])
+
+model = dict(
+    decode_head=dict(num_classes=num_classes),
+    norm_cfg=norm_net,
+)
 
 seed = 0
 # Modifications to Basic UDA
-uda = dict(
-    # Increased Alpha
-    colormix={"type": "none"},
-    alpha=0.999,
-    # Thing-Class Feature Distance
-    # imnet_feature_dist_lambda=0.005,
-    # imnet_feature_dist_classes=[6, 7, 11, 12, 13, 14, 15, 16, 17, 18],
-    # imnet_feature_dist_scale_min_ratio=0.75,
-    # Pseudo-Label Crop
-    pseudo_weight_ignore_top=0,
-    pseudo_weight_ignore_bottom=0,
-)
-
 class_temp = 0.1
 per_image = False
 data = dict(
-    samples_per_gpu=4,
+    samples_per_gpu=8,
     workers_per_gpu=2,
     train=dict(
         # Rare Class Sampling
@@ -69,14 +63,17 @@ optimizer = dict(
         )
     ),
 )
+
 n_gpus = 1
 runner = dict(type="IterBasedRunner", max_iters=30000)
 # Logging Configuration
 checkpoint_config = dict(by_epoch=False, interval=1000, max_keep_ckpts=1)
 evaluation = dict(interval=1000, metric="mDice")
-
 # Meta Information for Result Analysis
-name = f"{dataset}{datatag}_segformer101"
+
+num_norm_layers = len(norm_net["layers"])-2
+norm = f"{norm_net['norm_activation']}{num_norm_layers}"
+name = f"{dataset}{datatag}_segformer101_{norm}-debug-threshold"
 exp = "basic"
 name_dataset = f"{dataset}{datatag}"
 name_architecture = "segformer_r101"

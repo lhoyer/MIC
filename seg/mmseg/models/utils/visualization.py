@@ -100,11 +100,11 @@ def prepare_debug_out(title, out, mean, std, output_flag='Image'):
     if len(out.shape) == 2:
         out = np.expand_dims(out, 0)
     assert len(out.shape) == 3
-    if (out.shape[0] == 3):
+    if (out.shape[0] == 3) and ('Image' in output_flag):
         if mean is not None:
             out = torch.clamp(denorm(out, mean, std), 0, 1)[0]
         out = dict(title=title, img=out)
-    elif (out.shape[0] > 3) or (out.shape[0] == 2) and not ('Image' in output_flag):
+    elif (out.shape[0] >= 2) and not ('Image' in output_flag):
         out = torch.softmax(torch.from_numpy(out), dim=0).numpy()
         out = np.argmax(out, axis=0)
         out = dict(title=title, img=out, cmap='cityscapes')

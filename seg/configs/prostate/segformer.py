@@ -8,11 +8,10 @@
 # num_classes=15
 
 # WMH datasets
-# WMH datasets
-datatag = ''
-# dataset = 'brain_hcp1-hcp2'
-dataset = 'brain_abidec-hcp2'
-num_classes=15
+datatag = ""
+dataset = "prostate_nci-pirad_erc"
+num_classes = 3
+
 
 _base_ = [
     "../_base_/default_runtime.py",

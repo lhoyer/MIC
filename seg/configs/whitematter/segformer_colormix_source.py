@@ -28,45 +28,21 @@ _base_ = [
     # Linear Learning Rate Warmup with Subsequent Linear Decay
     "../_base_/schedules/poly10warm.py",
 ]
-# Random Seed
-# loss_name_teacher = 'DiceLoss'
-# ========================================
-# setting up the loss function for source
-# ----------------------------------------
-loss_name = "CE"
-loss_decode = dict(type="CrossEntropyLoss", use_sigmoid=False, loss_weight=1.0)
-# ----------------------------------------
-# loss_name = 'CEmem'
-# loss_decode=dict(type='ContrastMemoryBankCELoss',
-#                         use_sigmoid=False,
-#                         memory_bank_size=2048,
-#                         # memory_bank_size=512,
-#                         ignore_label=-1,
-#                         loss_weight=1.0)
-# ----------------------------------------
-# loss_name = 'CEmemIgnore'
-# loss_decode=dict(type='ContrastMemoryBankCELoss',
-#                         use_sigmoid=False,
-#                         memory_bank_size=2048,
-#                         ignore_label=0,
-#                         loss_weight=1.0)
-# ========================================
-norm_net = True
+
+uda = dict(color_mix=dict(freq=1.0, suppress_bg=False))
+norm_net = dict(norm_activation="linear", layers=[1, 1])
+
 model = dict(
-    decode_head=dict(num_classes=num_classes, loss_decode=loss_decode),
+    decode_head=dict(num_classes=num_classes),
     norm_cfg=norm_net,
 )
 
 seed = 0
 # Modifications to Basic UDA
-uda = dict(
-    color_mix=dict(freq=1.0, norm_type="sigmoid")
-    )
-
 class_temp = 0.1
 per_image = False
 data = dict(
-    samples_per_gpu=4,
+    samples_per_gpu=8,
     workers_per_gpu=2,
     train=dict(
         # Rare Class Sampling
@@ -87,19 +63,21 @@ optimizer = dict(
         )
     ),
 )
+
 n_gpus = 1
-runner = dict(type="IterBasedRunner", max_iters=40000)
+runner = dict(type="IterBasedRunner", max_iters=30000)
 # Logging Configuration
-checkpoint_config = dict(by_epoch=False, interval=4000, max_keep_ckpts=1)
+checkpoint_config = dict(by_epoch=False, interval=1000, max_keep_ckpts=1)
 evaluation = dict(interval=1000, metric="mDice")
 # Meta Information for Result Analysis
 
-norm_flag = "-norm" if norm_net else ""
-name = f"{dataset}{datatag}_segformer101{norm_flag}_{loss_name}"
+num_norm_layers = len(norm_net["layers"])-2
+norm = f"{norm_net['norm_activation']}{num_norm_layers}"
+name = f"{dataset}{datatag}_segformer101_{norm}-debug-removebgsup"
 exp = "basic"
 name_dataset = f"{dataset}{datatag}"
 name_architecture = "segformer_r101"
 name_encoder = "ResNetV1c"
 name_decoder = "SegFormerHead"
 name_uda = "dacs"
-name_opt = "adamw_6e-05_pmTrue_poly10warm_1x2_40k"
+name_opt = "adamw_6e-05_pmTrue_poly10warm_1x2_30k"

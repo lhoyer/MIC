@@ -8,11 +8,9 @@
 # num_classes=15
 
 # WMH datasets
-# WMH datasets
-datatag = ''
-# dataset = 'brain_hcp1-hcp2'
-dataset = 'brain_abidec-hcp2'
-num_classes=15
+datatag = ""
+dataset = "prostate_nci-nci"
+num_classes = 3
 
 _base_ = [
     "../_base_/default_runtime.py",
@@ -21,7 +19,7 @@ _base_ = [
     # GTA->Cityscapes Data Loading
     f"../_base_/datasets/uda_{dataset}_256x256{datatag}.py",
     # Basic UDA Self-Training
-    "../_base_/uda/dacs.py",
+    "../_base_/uda/dacs_srconly.py",
     # AdamW Optimizer
     "../_base_/schedules/adamw.py",
     # Linear Learning Rate Warmup with Subsequent Linear Decay
@@ -48,7 +46,7 @@ uda = dict(
 class_temp = 0.1
 per_image = False
 data = dict(
-    samples_per_gpu=4,
+    samples_per_gpu=8,
     workers_per_gpu=2,
     train=dict(
         # Rare Class Sampling

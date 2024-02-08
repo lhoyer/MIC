@@ -361,12 +361,15 @@ class DACS(UDADecorator):
 
         norm_loss.backward(retain_graph=False)
         
-        img = img_polished.detach()
-        del img_polished
+        if norm_loss.item() > 0.1:
+            img = img_polished.detach()
+            del img_polished
 
-        if self.color_mix['suppress_bg']:
-            img[background_mask] = img_segm_hist[background_mask]
-            # img[background_mask] = img_original[:, 0, :, :].unsqueeze(1)[background_mask].mean().item()
+            if self.color_mix['suppress_bg']:
+                img[background_mask] = img_segm_hist[background_mask]
+                # img[background_mask] = img_original[:, 0, :, :].unsqueeze(1)[background_mask].mean().item()
+        else:
+            img = img_segm_hist
 
         img = img.repeat(1, 3, 1, 1)
 

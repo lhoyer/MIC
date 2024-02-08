@@ -187,13 +187,13 @@ def main(args):
     
     name_dataset = dict_cfg["name_dataset"].split("_")[0]
     if 'color_mix' in dict_cfg["uda"]:
-        bcg_sup = '-bgs' if dict_cfg["uda"]["color_mix"]["suppress_bg"] else ""
-        color_mix_flag = f'-colormix-{dict_cfg["uda"]["color_mix"]["type"]}-{dict_cfg["uda"]["color_mix"]["freq"]:.2f}{bcg_sup}'
+        bcg_sup = '-bgs' if dict_cfg["uda"]["color_mix"]["suppress_bg"] else "-nobgs"
+        color_mix_flag = f'-colormix-{dict_cfg["uda"]["color_mix"]["freq"]:.2f}{bcg_sup}'
         wandb_taks_name = f"{wandb_taks_name}{color_mix_flag}"
     project_name = f"MIC-{name_dataset}"    
 
-    if "debug" in dict_cfg["name"]:
-        project_name = "MIC-debug"
+    # if "debug" in dict_cfg["name"]:
+    #     project_name = "MIC-debug"
 
     run = wandb.init(
         project=project_name,
