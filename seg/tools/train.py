@@ -192,14 +192,10 @@ def main(args):
         wandb_taks_name = f"{wandb_taks_name}{color_mix_flag}"
     project_name = f"MIC-{name_dataset}"    
 
-    # if "debug" in dict_cfg["name"]:
-    #     project_name = "MIC-debug"
-
     run = wandb.init(
         project=project_name,
         config=cfg,
         name=wandb_taks_name,
-        #  save_dir='/usr/bmicnas02/data-biwi-01/klanna_data/results/MIC/wandb/',
         dir=dict_cfg["work_dir"],
         settings=wandb.Settings(_service_wait=300)
     )
