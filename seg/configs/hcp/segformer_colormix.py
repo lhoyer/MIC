@@ -3,14 +3,11 @@
 # Copyright (c) 2021-2022 ETH Zurich, Lukas Hoyer. All rights reserved.
 # Licensed under the Apache License, Version 2.0
 # ---------------------------------------------------------------
-# datatag = '_ContrastFlip_v4'
-# dataset = 'brain_hcp1_full-hcp2'
-# num_classes=15
 
-# WMH datasets
+datatag = ""
 datatag = "_euler"
-dataset = "wmh_nuhs-umc"
-num_classes = 2
+dataset = 'brain_hcp1-hcp2'
+num_classes=15
 
 _base_ = [
     "../_base_/default_runtime.py",

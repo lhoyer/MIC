@@ -3,14 +3,10 @@
 # Copyright (c) 2021-2022 ETH Zurich, Lukas Hoyer. All rights reserved.
 # Licensed under the Apache License, Version 2.0
 # ---------------------------------------------------------------
-# datatag = '_ContrastFlip_v4'
-# dataset = 'brain_hcp1_full-hcp2'
-# num_classes=15
-
-# WMH datasets
+datatag = ""
 datatag = "_euler"
-dataset = "wmh_nuhs-umc"
-num_classes = 2
+dataset = 'brain_abidec-hcp2'
+num_classes=15
 
 _base_ = [
     "../_base_/default_runtime.py",
@@ -26,7 +22,7 @@ _base_ = [
     "../_base_/schedules/poly10warm.py",
 ]
 
-burnin = -1
+burnin = 1000
 uda = dict(color_mix=dict(freq=1.0, suppress_bg=True, burnin=burnin))
 norm_net = dict(norm_activation="linear", layers=[1, 1])
 # norm_net = dict(norm_activation="relu", layers=[1, 32, 1])
