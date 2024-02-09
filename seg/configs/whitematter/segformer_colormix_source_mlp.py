@@ -29,8 +29,9 @@ _base_ = [
     "../_base_/schedules/poly10warm.py",
 ]
 
-uda = dict(color_mix=dict(freq=0.5, suppress_bg=False))
-norm_net = dict(norm_activation="relu", layers=[1, 32, 1])
+uda = dict(color_mix=dict(freq=1.0, suppress_bg=True))
+norm_net = dict(norm_activation="linear", layers=[1, 1])
+# norm_net = dict(norm_activation="relu", layers=[1, 32, 1])
 
 model = dict(
     decode_head=dict(num_classes=num_classes),
