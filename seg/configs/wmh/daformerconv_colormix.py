@@ -8,6 +8,7 @@
 # num_classes=15
 
 # WMH datasets
+datatag = ""
 datatag = "_euler"
 dataset = "wmh_nuhs-umc"
 num_classes = 2
@@ -15,7 +16,7 @@ num_classes = 2
 _base_ = [
     "../_base_/default_runtime.py",
     # DAFormer Network Architecture
-    "../_base_/models/segformer_r101.py",
+    "../_base_/models/daformernet_r50-d8.py",
     # GTA->Cityscapes Data Loading
     f"../_base_/datasets/uda_{dataset}_256x256{datatag}.py",
     # Basic UDA Self-Training
@@ -38,10 +39,11 @@ model = dict(
 
 seed = 0
 # Modifications to Basic UDA
+
 class_temp = 0.1
 per_image = False
 data = dict(
-    samples_per_gpu=8,
+    samples_per_gpu=4,
     workers_per_gpu=2,
     train=dict(
         # Rare Class Sampling
@@ -62,20 +64,18 @@ optimizer = dict(
         )
     ),
 )
-
 n_gpus = 1
 runner = dict(type="IterBasedRunner", max_iters=30000)
 # Logging Configuration
 checkpoint_config = dict(by_epoch=False, interval=1000, max_keep_ckpts=1)
 evaluation = dict(interval=1000, metric="mDice")
+
 # Meta Information for Result Analysis
-
-
 exp = "basic"
 name_dataset = f"{dataset}{datatag}"
-name_architecture = "segformer_r101"
+name_architecture = "daformernet"
 name_encoder = "ResNetV1c"
-name_decoder = "SegFormerHead"
+name_decoder = "daformer_conv1"
 name_uda = "dacs"
 name_opt = "adamw_6e-05_pmTrue_poly10warm_1x2_30k"
 
