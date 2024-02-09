@@ -9,10 +9,8 @@
 
 # WMH datasets
 datatag = ""
+datatag = "_euler"
 dataset = "wmh_nuhs-umc"
-# dataset = 'wmh_umc_source'
-# dataset = 'wmh_nuhs_source'
-# dataset = 'wmh_vu_source'
 num_classes = 2
 
 _base_ = [
@@ -35,7 +33,6 @@ seed = 0
 # Modifications to Basic UDA
 uda = dict(
     # Increased Alpha
-    colormix={"type": "none"},
     alpha=0.999,
     # Thing-Class Feature Distance
     # imnet_feature_dist_lambda=0.005,
@@ -77,7 +74,6 @@ checkpoint_config = dict(by_epoch=False, interval=1000, max_keep_ckpts=1)
 evaluation = dict(interval=1000, metric="mDice")
 
 # Meta Information for Result Analysis
-name = f"{dataset}{datatag}_segformer101"
 exp = "basic"
 name_dataset = f"{dataset}{datatag}"
 name_architecture = "segformer_r101"
@@ -85,3 +81,4 @@ name_encoder = "ResNetV1c"
 name_decoder = "SegFormerHead"
 name_uda = "dacs"
 name_opt = "adamw_6e-05_pmTrue_poly10warm_1x2_30k"
+name = f"{dataset}{datatag}_{name_architecture}"

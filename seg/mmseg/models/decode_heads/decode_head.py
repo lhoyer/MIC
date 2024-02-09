@@ -228,7 +228,7 @@ class BaseDecodeHead(BaseModule, metaclass=ABCMeta):
             losses = self.losses(seg_logits, gt_semantic_seg, seg_weight, mode=mode, features=features)
         else:
             seg_logits = self.forward(inputs)
-            losses = self.losses(seg_logits, gt_semantic_seg, seg_weight, mode=mode)
+            losses = self.losses(seg_logits, gt_semantic_seg, seg_weight)
         
         if return_logits:
             losses['logits'] = seg_logits

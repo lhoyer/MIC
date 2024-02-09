@@ -361,8 +361,7 @@ class DACS(UDADecorator):
 
         norm_loss.backward(retain_graph=False)
         
-        # if norm_loss.item() > 0.1:
-        if self.local_iter >= self.color_mix['burnin']:
+        if ((self.local_iter >= self.color_mix['burnin']) and (self.color_mix['burnin'] != -1)) or ((self.color_mix['burnin'] == -1) and (norm_loss.item() > 0.1)):
             img = img_polished.detach()
             del img_polished
 
