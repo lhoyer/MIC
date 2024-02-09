@@ -4,7 +4,7 @@
 # Licensed under the Apache License, Version 2.0
 # ---------------------------------------------------------------
 
-data_root='/itet-stor/klanna/bmicdatasets_bmicnas02/Sharing/klanna/da_data/brain/',
+data_root='/itet-stor/klanna/bmicdatasets_bmicnas02/Sharing/klanna/da_data/brain/'
 
 # dataset settings
 dataset_type = 'BrainDataset'

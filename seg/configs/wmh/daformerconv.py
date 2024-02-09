@@ -9,7 +9,7 @@
 
 # WMH datasets
 datatag = ""
-datatag = "_euler"
+# datatag = "_euler"
 dataset = "wmh_nuhs-umc"
 num_classes = 2
 

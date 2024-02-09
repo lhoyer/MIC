@@ -21,7 +21,7 @@ model = dict(
         contract_dilation=True),
     decode_head=dict(
         type='DAFormerHead',
-        in_channels=[64, 128, 320, 512],
+        in_channels=[256, 512, 1024, 2048],
         in_index=[0, 1, 2, 3],
         channels=256,
         dropout_ratio=0.1,
@@ -29,7 +29,7 @@ model = dict(
         norm_cfg=norm_cfg,
         align_corners=False,
         decoder_params=dict(
-            embed_dims=256,
+            embed_dims=768,
             embed_cfg=dict(type='mlp', act_cfg=None, norm_cfg=None),
             embed_neck_cfg=dict(type='mlp', act_cfg=None, norm_cfg=None),
             fusion_cfg=dict(
