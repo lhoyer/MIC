@@ -129,3 +129,5 @@ configs/generated/
 *.pdf
 *.pgf
 visualization/*.png
+
+slurm*

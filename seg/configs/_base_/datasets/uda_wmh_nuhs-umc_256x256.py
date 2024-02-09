@@ -4,6 +4,8 @@
 # Licensed under the Apache License, Version 2.0
 # ---------------------------------------------------------------
 
+data_root='/itet-stor/klanna/bmicdatasets_bmicnas02/Sharing/klanna/da_data/brain/',
+
 # dataset settings
 dataset_type = 'BrainDataset'
 img_norm_cfg = dict(
@@ -66,25 +68,25 @@ data = dict(
         type='UDADataset',
         source=dict(
             type='WMHDataset',
-            data_root='/itet-stor/klanna/bmicdatasets_bmicnas02/Sharing/klanna/da_data/brain/nuhs/',
+            data_root=f'{data_root}/nuhs/',
             img_dir='images/train',
             ann_dir='labels/train',
             pipeline=source_train_pipeline),
         target=dict(
             type='WMHDataset',
-            data_root='/itet-stor/klanna/bmicdatasets_bmicnas02/Sharing/klanna/da_data/brain/umc/',
+            data_root=f'{data_root}/umc/',
             img_dir='images/train',
             ann_dir='labels/train',
             pipeline=target_train_pipeline)),
     val=dict(
         type='WMHDataset',
-        data_root='/itet-stor/klanna/bmicdatasets_bmicnas02/Sharing/klanna/da_data/brain/umc/',
+        data_root=f'{data_root}/umc/',
         img_dir='images/test',
         ann_dir='labels/test',
         pipeline=test_pipeline),
     test=dict(
         type='WMHDataset',
-        data_root='/itet-stor/klanna/bmicdatasets_bmicnas02/Sharing/klanna/da_data/brain/umc/',
+        data_root=f'{data_root}/umc/',
         img_dir='images/test',
         ann_dir='labels/test',
         pipeline=test_pipeline))

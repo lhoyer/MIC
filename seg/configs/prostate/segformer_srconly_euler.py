@@ -8,12 +8,9 @@
 # num_classes=15
 
 # WMH datasets
-datatag = ""
-dataset = "wmh_nuhs-umc"
-# dataset = 'wmh_umc_source'
-# dataset = 'wmh_nuhs_source'
-# dataset = 'wmh_vu_source'
-num_classes = 2
+datatag = '_euler'
+dataset = "prostate_nci-pirad_erc"
+num_classes = 3
 
 _base_ = [
     "../_base_/default_runtime.py",
@@ -22,24 +19,30 @@ _base_ = [
     # GTA->Cityscapes Data Loading
     f"../_base_/datasets/uda_{dataset}_256x256{datatag}.py",
     # Basic UDA Self-Training
-    "../_base_/uda/dacs_colormix.py",
+    "../_base_/uda/dacs_srconly.py",
     # AdamW Optimizer
     "../_base_/schedules/adamw.py",
     # Linear Learning Rate Warmup with Subsequent Linear Decay
     "../_base_/schedules/poly10warm.py",
 ]
 
-uda = dict(color_mix=dict(freq=1.0, suppress_bg=True))
-norm_net = dict(norm_activation="linear", layers=[1, 1])
-# norm_net = dict(norm_activation="relu", layers=[1, 32, 1])
-
-model = dict(
-    decode_head=dict(num_classes=num_classes),
-    norm_cfg=norm_net,
-)
+model = dict(decode_head=dict(num_classes=num_classes))
 
 seed = 0
 # Modifications to Basic UDA
+uda = dict(
+    # Increased Alpha
+    colormix={"type": "none"},
+    alpha=0.999,
+    # Thing-Class Feature Distance
+    # imnet_feature_dist_lambda=0.005,
+    # imnet_feature_dist_classes=[6, 7, 11, 12, 13, 14, 15, 16, 17, 18],
+    # imnet_feature_dist_scale_min_ratio=0.75,
+    # Pseudo-Label Crop
+    pseudo_weight_ignore_top=0,
+    pseudo_weight_ignore_bottom=0,
+)
+
 class_temp = 0.1
 per_image = False
 data = dict(
@@ -64,17 +67,14 @@ optimizer = dict(
         )
     ),
 )
-
 n_gpus = 1
 runner = dict(type="IterBasedRunner", max_iters=30000)
 # Logging Configuration
 checkpoint_config = dict(by_epoch=False, interval=1000, max_keep_ckpts=1)
-evaluation = dict(interval=1000, metric="mDice")
-# Meta Information for Result Analysis
+evaluation = dict(interval=100, metric="mDice")
 
-num_norm_layers = len(norm_net["layers"])-2
-norm = f"{norm_net['norm_activation']}{num_norm_layers}"
-name = f"{dataset}{datatag}_segformer101_{norm}-debug-threshold"
+# Meta Information for Result Analysis
+name = f"{dataset}{datatag}_segformer101-woDA"
 exp = "basic"
 name_dataset = f"{dataset}{datatag}"
 name_architecture = "segformer_r101"

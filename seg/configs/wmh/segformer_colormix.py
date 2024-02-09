@@ -8,11 +8,8 @@
 # num_classes=15
 
 # WMH datasets
-datatag = ""
+datatag = "_euler"
 dataset = "wmh_nuhs-umc"
-# dataset = 'wmh_umc_source'
-# dataset = 'wmh_nuhs_source'
-# dataset = 'wmh_vu_source'
 num_classes = 2
 
 _base_ = [
@@ -29,8 +26,10 @@ _base_ = [
     "../_base_/schedules/poly10warm.py",
 ]
 
-uda = dict(color_mix=dict(freq=1.0, suppress_bg=False))
+burnin = 1000
+uda = dict(color_mix=dict(freq=1.0, suppress_bg=True, burnin=burnin))
 norm_net = dict(norm_activation="linear", layers=[1, 1])
+# norm_net = dict(norm_activation="relu", layers=[1, 32, 1])
 
 model = dict(
     decode_head=dict(num_classes=num_classes),
@@ -73,7 +72,7 @@ evaluation = dict(interval=1000, metric="mDice")
 
 num_norm_layers = len(norm_net["layers"])-2
 norm = f"{norm_net['norm_activation']}{num_norm_layers}"
-name = f"{dataset}{datatag}_segformer101_{norm}-debug-removebgsup"
+name = f"{dataset}{datatag}_segformer101_{norm}-burnin{burnin}"
 exp = "basic"
 name_dataset = f"{dataset}{datatag}"
 name_architecture = "segformer_r101"
