@@ -1,5 +1,13 @@
 #!/bin/bash
 
+#SBATCH  --output=./LOGS/%j.out
+#SBATCH  --error=./LOGS/%j.out
+#SBATCH  --gpus=1
+#SBATCH  --mem-per-cpu=40G
+#SBATCH  --ntasks=1
+#SBATCH  --cpus-per-task=4
+#SBATCH  --time=1-0
+
 source /cluster/home/klanna/conda/conda/etc/profile.d/conda.sh
 conda activate /cluster/project/cvl/klanna/conda-envs/mic-mmcv-full-prebuilt
 
@@ -12,3 +20,5 @@ python -u run_experiments.py "$@" --out_path "/cluster/work/cvl/klanna/MIC-resul
 # sbatch --time=1-0 --mem-per-cpu=40G --gpus=1  --ntasks=1 --cpus-per-task=4  ./euler_submit.sh
 
 # srun --pty bash --time=4-0 --mem-per-cpu=40G --gpus=1  --ntasks=1 --cpus-per-task=4
+
+# sbatch --time=1-0 --mem-per-cpu=40G --gpus=1  --ntasks=1 --cpus-per-task=4  ./euler_submit.sh --config configs/hcp/danet_colormix.py

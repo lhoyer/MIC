@@ -3,17 +3,20 @@
 # Copyright (c) 2021-2022 ETH Zurich, Lukas Hoyer. All rights reserved.
 # Licensed under the Apache License, Version 2.0
 # ---------------------------------------------------------------
+# datatag = '_ContrastFlip_v4'
+# dataset = 'brain_hcp1_full-hcp2'
+# num_classes=15
 
 # WMH datasets
+datatag = ""
 datatag = "_euler"
-# datatag = ""
-dataset = "wmh_nuhs-umc"
-num_classes = 2
+dataset = 'brain_hcp1-hcp2'
+num_classes=15
 
 _base_ = [
     "../_base_/default_runtime.py",
     # DAFormer Network Architecture
-    "../_base_/models/segformer_r101.py",
+    "../_base_/models/daformernet_r50-d8.py",
     # GTA->Cityscapes Data Loading
     f"../_base_/datasets/uda_{dataset}_256x256{datatag}.py",
     # Basic UDA Self-Training
@@ -24,7 +27,7 @@ _base_ = [
     "../_base_/schedules/poly10warm.py",
 ]
 
-burnin = 1000
+burnin = -1
 uda = dict(color_mix=dict(freq=1.0, suppress_bg=True, burnin=burnin))
 norm_net = dict(norm_activation="linear", layers=[1, 1])
 # norm_net = dict(norm_activation="relu", layers=[1, 32, 1])
@@ -36,10 +39,11 @@ model = dict(
 
 seed = 0
 # Modifications to Basic UDA
+
 class_temp = 0.1
 per_image = False
 data = dict(
-    samples_per_gpu=8,
+    samples_per_gpu=4,
     workers_per_gpu=2,
     train=dict(
         # Rare Class Sampling
@@ -60,23 +64,21 @@ optimizer = dict(
         )
     ),
 )
-
 n_gpus = 1
 runner = dict(type="IterBasedRunner", max_iters=30000)
 # Logging Configuration
 checkpoint_config = dict(by_epoch=False, interval=1000, max_keep_ckpts=1)
-evaluation = dict(interval=100, metric="mDice")
+evaluation = dict(interval=1000, metric="mDice")
+
 # Meta Information for Result Analysis
-
-
 exp = "basic"
 name_dataset = f"{dataset}{datatag}"
-name_architecture = "segformer_r101"
+name_architecture = "daformernet"
 name_encoder = "ResNetV1c"
-name_decoder = "SegFormerHead"
+name_decoder = "daformer_conv1"
 name_uda = "dacs"
 name_opt = "adamw_6e-05_pmTrue_poly10warm_1x2_30k"
 
 num_norm_layers = len(norm_net["layers"])-2
 norm = f"{norm_net['norm_activation']}{num_norm_layers}"
-name = f"{dataset}{datatag}_{name_architecture}_{norm}-burnin{burnin}-debug"
+name = f"{dataset}{datatag}_{name_architecture}_{norm}-burnin{burnin}"
