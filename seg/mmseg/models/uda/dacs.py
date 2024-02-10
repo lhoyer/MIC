@@ -52,6 +52,7 @@ import wandb
 from torchvision.utils import make_grid
 from PIL import Image
 
+
 def _params_equal(ema_model, model):
     for ema_param, param in zip(ema_model.named_parameters(), model.named_parameters()):
         if not torch.equal(ema_param[1].data, param[1].data):
@@ -98,7 +99,7 @@ class DACS(UDADecorator):
             cfg["enable_contrastive"] if "enable_contrastive" in cfg else False
         )
         self.burnin = cfg["burnin"] if "burnin" in cfg else 0
-        self.color_mix = cfg["color_mix"] if "color_mix" in cfg else dict(type='none')
+        self.color_mix = cfg["color_mix"] if "color_mix" in cfg else dict(type="none")
 
         # assert self.mix == 'class'
         if self.mix != "class":
@@ -125,9 +126,10 @@ class DACS(UDADecorator):
         if self.color_mix["type"] != "none":
             num_classes = self.get_model().decode_head.num_classes
             self.contrast_flip = ClasswiseMultAugmenter(
-                num_classes, self.color_mix["norm_type"], 
+                num_classes,
+                self.color_mix["norm_type"],
                 suppress_bg=self.color_mix["suppress_bg"],
-            )       
+            )
             self.criterion = nn.MSELoss()
 
     def get_ema_model(self):
@@ -335,37 +337,42 @@ class DACS(UDADecorator):
 
     def intensity_normalization(self, img_original, gt_semantic_seg, means, stds):
         # estimate tgt intensities using GT segmenation masks
-        
+
         img_segm_hist = self.contrast_flip.color_mix(
             img_original, gt_semantic_seg, means, stds
-        )     
+        )
 
         # img, loss_val = self.contrast_flip.optimization_step(img_original, img_segm_hist, gt_semantic_seg)
 
         # update normalization net
         norm_net = self.get_model().normalization_net
-        img_polished = norm_net(img_original[:, 0, :, :].unsqueeze(1))        
+        img_polished = norm_net(img_original[:, 0, :, :].unsqueeze(1))
 
-        if self.color_mix['suppress_bg']:
-             ## automatically detect background value
+        if self.color_mix["suppress_bg"]:
+            ## automatically detect background value
             # background_val = img_original[0, 0, 0, 0].item()
             # foreground_mask = img_original[:, 0, :, :].unsqueeze(1) > 0
             # background_mask = img_original[:, 0, :, :].unsqueeze(1) == background_val
-            
+
             foreground_mask = gt_semantic_seg > 0
             background_mask = gt_semantic_seg == 0
 
-            norm_loss = self.criterion(img_polished[foreground_mask], img_segm_hist[foreground_mask])
+            norm_loss = self.criterion(
+                img_polished[foreground_mask], img_segm_hist[foreground_mask]
+            )
         else:
             norm_loss = self.criterion(img_polished, img_segm_hist)
 
         norm_loss.backward(retain_graph=False)
-        
-        if ((self.local_iter >= self.color_mix['burnin']) and (self.color_mix['burnin'] != -1)) or ((self.color_mix['burnin'] == -1) and (norm_loss.item() > 0.1)):
+
+        if (
+            (self.local_iter >= self.color_mix["burnin"])
+            and (self.color_mix["burnin"] != -1)
+        ) or ((self.color_mix["burnin"] == -1) and (norm_loss.item() > 0.1)):
             img = img_polished.detach()
             del img_polished
 
-            if self.color_mix['suppress_bg']:
+            if self.color_mix["suppress_bg"]:
                 img[background_mask] = img_segm_hist[background_mask]
                 # img[background_mask] = img_original[:, 0, :, :].unsqueeze(1)[background_mask].mean().item()
 
@@ -373,27 +380,45 @@ class DACS(UDADecorator):
         else:
             img = img_original
 
-        
-
         if self.local_iter % 20 == 0:
             # for i in range(self.contrast_flip.n_classes):
             #     wandb.log({f"Class_{i+1} src": self.contrast_flip.source_mean[i, 0].item()}, step=self.local_iter+1)
             #     wandb.log({f"Class_{i+1} tgt": self.contrast_flip.target_mean[i, 0].item()}, step=self.local_iter+1)
 
             # for name, param in self.contrast_flip.normalization_net.named_parameters():
-                # wandb.log({name: param.data.item()}, step=self.local_iter+1)
+            # wandb.log({name: param.data.item()}, step=self.local_iter+1)
             # wandb.log({'loss': loss_val}, step=self.local_iter+1)
-            wandb.log({'loss': norm_loss.item()}, step=self.local_iter+1)
+            wandb.log({"loss": norm_loss.item()}, step=self.local_iter + 1)
 
-            vis_img = torch.clamp(denorm(img_original, means, stds), 0, 1).cpu().permute(0, 2, 3, 1)[0].numpy()
-            vis_trg_img = torch.clamp(denorm(img_segm_hist, means, stds), 0, 1).cpu().permute(0, 2, 3, 1)[0].numpy()
-            vis_mixed_img = torch.clamp(denorm(img, means, stds), 0, 1).cpu().permute(0, 2, 3, 1)[0].numpy()
+            vis_img = (
+                torch.clamp(denorm(img_original, means, stds), 0, 1)
+                .cpu()
+                .permute(0, 2, 3, 1)[0]
+                .numpy()
+            )
+            vis_trg_img = (
+                torch.clamp(denorm(img_segm_hist, means, stds), 0, 1)
+                .cpu()
+                .permute(0, 2, 3, 1)[0]
+                .numpy()
+            )
+            vis_mixed_img = (
+                torch.clamp(denorm(img, means, stds), 0, 1)
+                .cpu()
+                .permute(0, 2, 3, 1)[0]
+                .numpy()
+            )
 
-            wandb.log({"Augmentation": wandb.Image(
-                np.concatenate([vis_img, vis_trg_img, vis_mixed_img], axis=1))})       
+            wandb.log(
+                {
+                    "Augmentation": wandb.Image(
+                        np.concatenate([vis_img, vis_trg_img, vis_mixed_img], axis=1)
+                    )
+                }
+            )
 
         return img
-    
+
     def forward_train(
         self,
         img,
@@ -452,8 +477,23 @@ class DACS(UDADecorator):
 
         img_original = img.clone()
         if self.color_mix["type"] == "source":
+            # for name, m in self.get_model().named_modules():
+            #     if "normalization_net" in name:
+            #         print('colormix', m.training)
+
             if np.random.rand() < self.color_mix["freq"]:
-                img = self.intensity_normalization(img_original, gt_semantic_seg, means, stds)
+                img = self.intensity_normalization(
+                    img_original, gt_semantic_seg, means, stds
+                )
+
+        for name, m in self.get_model().named_modules():
+            if "normalization_net" in name:
+                # print('source', m.training)
+                m.training = False
+
+        # for name, m in self.get_model().named_modules():
+        #     if "normalization_net" in name:
+        #         print('source after', m.training)
 
         # Train on source images
         clean_losses = self.get_model().forward_train(
@@ -561,21 +601,11 @@ class DACS(UDADecorator):
                 mixed_img = torch.cat(mixed_img)
                 mixed_lbl = torch.cat(mixed_lbl)
 
-            mixed_model = self.get_model()
-            training_flag = True
-
-            # for name, m in mixed_model.named_modules():
+            # for name, m in self.get_model().named_modules():
             #     if "normalization_net" in name:
-            #         training_flag = False
-
-            for name, m in mixed_model.named_modules():
-                if "normalization_net" in name:
-                    m.training = False
-                else:
-                    m.training = True
-
-                # Train on mixed images
-
+            #         print('mix:', m.training)
+                    # m.training = False
+            
             mix_losses = self.get_model().forward_train(
                 mixed_img,
                 img_metas,
@@ -608,8 +638,8 @@ class DACS(UDADecorator):
                 log_vars.update(contrast_log_vars)
                 contrast_loss.backward()
 
-            for name, m in self.get_model().named_modules():
-                m.training = training_flag
+            # for name, m in self.get_model().named_modules():
+            #     m.training = training_flag
 
         # Masked Training
         if self.enable_masking and self.mask_mode.startswith("separate"):
