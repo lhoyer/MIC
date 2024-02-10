@@ -368,7 +368,7 @@ class DACS(UDADecorator):
         if (
             (self.local_iter >= self.color_mix["burnin"])
             and (self.color_mix["burnin"] != -1)
-        ) or ((self.color_mix["burnin"] == -1) and (norm_loss.item() > 0.1)):
+        ) or ((self.color_mix["burnin"] == -1) and (norm_loss.item() < self.color_mix["burninthresh"])):
             img = img_polished.detach()
             del img_polished
 
@@ -377,10 +377,12 @@ class DACS(UDADecorator):
                 # img[background_mask] = img_original[:, 0, :, :].unsqueeze(1)[background_mask].mean().item()
 
             img = img.repeat(1, 3, 1, 1)
+            # print(f"{self.local_iter}, Using predicted, loss={norm_loss.item()}")
         else:
+            # print(f"{self.local_iter}, Using original, loss={norm_loss.item()}")
             img = img_original
 
-        if self.local_iter % 20 == 0:
+        if self.local_iter % 100 == 0:
             # for i in range(self.contrast_flip.n_classes):
             #     wandb.log({f"Class_{i+1} src": self.contrast_flip.source_mean[i, 0].item()}, step=self.local_iter+1)
             #     wandb.log({f"Class_{i+1} tgt": self.contrast_flip.target_mean[i, 0].item()}, step=self.local_iter+1)

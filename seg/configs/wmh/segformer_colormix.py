@@ -5,8 +5,8 @@
 # ---------------------------------------------------------------
 
 # WMH datasets
-datatag = "_euler"
-# datatag = ""
+# datatag = "_euler"
+datatag = ""
 dataset = "wmh_nuhs-umc"
 num_classes = 2
 
@@ -24,8 +24,8 @@ _base_ = [
     "../_base_/schedules/poly10warm.py",
 ]
 
-burnin = 1000
-uda = dict(color_mix=dict(freq=1.0, suppress_bg=True, burnin=burnin))
+burnin = -1
+uda = dict(color_mix=dict(freq=1.0, suppress_bg=True, burnin=burnin, burninthresh=1.0))
 norm_net = dict(norm_activation="linear", layers=[1, 1])
 # norm_net = dict(norm_activation="relu", layers=[1, 32, 1])
 
