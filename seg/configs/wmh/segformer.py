@@ -3,13 +3,10 @@
 # Copyright (c) 2021-2022 ETH Zurich, Lukas Hoyer. All rights reserved.
 # Licensed under the Apache License, Version 2.0
 # ---------------------------------------------------------------
-# datatag = '_ContrastFlip_v4'
-# dataset = 'brain_hcp1_full-hcp2'
-# num_classes=15
 
 # WMH datasets
 datatag = ""
-datatag = "_euler"
+# datatag = "_euler"
 dataset = "wmh_nuhs-umc"
 num_classes = 2
 
@@ -71,7 +68,7 @@ n_gpus = 1
 runner = dict(type="IterBasedRunner", max_iters=30000)
 # Logging Configuration
 checkpoint_config = dict(by_epoch=False, interval=1000, max_keep_ckpts=1)
-evaluation = dict(interval=1000, metric="mDice")
+evaluation = dict(interval=100, metric="mDice")
 
 # Meta Information for Result Analysis
 exp = "basic"
@@ -81,4 +78,4 @@ name_encoder = "ResNetV1c"
 name_decoder = "SegFormerHead"
 name_uda = "dacs"
 name_opt = "adamw_6e-05_pmTrue_poly10warm_1x2_30k"
-name = f"{dataset}{datatag}_{name_architecture}"
+name = f"{dataset}{datatag}_{name_architecture}-debug"
