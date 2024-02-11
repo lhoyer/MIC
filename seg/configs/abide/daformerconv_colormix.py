@@ -10,8 +10,8 @@
 # WMH datasets
 datatag = ""
 datatag = "_euler"
-dataset = "wmh_nuhs-umc"
-num_classes = 2
+dataset = 'brain_abidec-hcp2'
+num_classes=15
 
 _base_ = [
     "../_base_/default_runtime.py",

@@ -81,4 +81,4 @@ name_opt = "adamw_6e-05_pmTrue_poly10warm_1x2_30k"
 
 num_norm_layers = len(norm_net["layers"])-2
 norm = f"{norm_net['norm_activation']}{num_norm_layers}"
-name = f"{dataset}{datatag}_{name_architecture}_{norm}-burnin{burnin}"
+name = f"{dataset}{datatag}_{name_architecture}_{norm}-burnin{burnin}-flag"

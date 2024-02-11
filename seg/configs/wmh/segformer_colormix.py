@@ -5,8 +5,8 @@
 # ---------------------------------------------------------------
 
 # WMH datasets
-# datatag = "_euler"
-datatag = ""
+datatag = "_euler"
+# datatag = ""
 dataset = "wmh_nuhs-umc"
 num_classes = 2
 
@@ -65,7 +65,7 @@ n_gpus = 1
 runner = dict(type="IterBasedRunner", max_iters=30000)
 # Logging Configuration
 checkpoint_config = dict(by_epoch=False, interval=1000, max_keep_ckpts=1)
-evaluation = dict(interval=100, metric="mDice")
+evaluation = dict(interval=1000, metric="mDice")
 # Meta Information for Result Analysis
 
 
@@ -79,4 +79,4 @@ name_opt = "adamw_6e-05_pmTrue_poly10warm_1x2_30k"
 
 num_norm_layers = len(norm_net["layers"])-2
 norm = f"{norm_net['norm_activation']}{num_norm_layers}"
-name = f"{dataset}{datatag}_{name_architecture}_{norm}-burnin{burnin}-debug"
+name = f"{dataset}{datatag}_{name_architecture}_{norm}-burnin{burnin}-flag"

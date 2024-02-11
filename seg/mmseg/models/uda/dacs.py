@@ -131,7 +131,8 @@ class DACS(UDADecorator):
                 suppress_bg=self.color_mix["suppress_bg"],
             )
             self.criterion = nn.MSELoss()
-
+            self.color_mix_flag = False
+            
     def get_ema_model(self):
         return get_module(self.ema_model)
 
@@ -365,10 +366,13 @@ class DACS(UDADecorator):
 
         norm_loss.backward(retain_graph=False)
 
+        if norm_loss.item() < self.color_mix["burninthresh"]:
+            self.color_mix_flag = True
+
         if (
             (self.local_iter >= self.color_mix["burnin"])
             and (self.color_mix["burnin"] != -1)
-        ) or ((self.color_mix["burnin"] == -1) and (norm_loss.item() < self.color_mix["burninthresh"])):
+        ) or ((self.color_mix["burnin"] == -1) and self.color_mix_flag):
             img = img_polished.detach()
             del img_polished
 
@@ -493,10 +497,6 @@ class DACS(UDADecorator):
                 # print('source', m.training)
                 m.training = False
 
-        # for name, m in self.get_model().named_modules():
-        #     if "normalization_net" in name:
-        #         print('source after', m.training)
-
         # Train on source images
         clean_losses = self.get_model().forward_train(
             img, img_metas, gt_semantic_seg, return_feat=True, mode="source"
@@ -606,7 +606,7 @@ class DACS(UDADecorator):
             # for name, m in self.get_model().named_modules():
             #     if "normalization_net" in name:
             #         print('mix:', m.training)
-                    # m.training = False
+            #         m.training = False
             
             mix_losses = self.get_model().forward_train(
                 mixed_img,

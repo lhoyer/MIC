@@ -15,6 +15,7 @@ uda = dict(
         "suppress_bg": True,
         "norm_type": "linear",
         "burnin": 0,
+        "burninthresh": 1.0
     },
     pseudo_weight_ignore_top=0,
     pseudo_weight_ignore_bottom=0,
