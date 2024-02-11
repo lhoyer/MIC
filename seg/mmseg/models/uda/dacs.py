@@ -41,6 +41,8 @@ from mmseg.models.utils.dacs_transforms import (
     get_class_masks,
     get_mean_std,
     strong_transform,
+    color_jitter,
+    gaussian_blur,
     ClasswiseMultAugmenter,
 )
 from mmseg.models.utils.visualization import prepare_debug_out, subplotimg
@@ -336,7 +338,7 @@ class DACS(UDADecorator):
             pseudo_weight *= valid_pseudo_mask.squeeze(1)
         return pseudo_weight
 
-    def intensity_normalization(self, img_original, gt_semantic_seg, means, stds):
+    def intensity_normalization(self, img_original, gt_semantic_seg, means, stds, param):
         # estimate tgt intensities using GT segmenation masks
 
         img_segm_hist = self.contrast_flip.color_mix(
@@ -386,7 +388,17 @@ class DACS(UDADecorator):
             # print(f"{self.local_iter}, Using original, loss={norm_loss.item()}")
             img = img_original
 
-        if self.local_iter % 100 == 0:
+        img_aug = color_jitter(
+            color_jitter=param["color_jitter"],
+            s=param["color_jitter_s"],
+            p=param["color_jitter_p"],
+            mean=param["mean"],
+            std=param["std"],
+            data=img.clone(),
+        )[0]
+        img_aug = gaussian_blur(blur=param["blur"], data=img_aug)[0]
+
+        if self.local_iter % 200 == 0:
             # for i in range(self.contrast_flip.n_classes):
             #     wandb.log({f"Class_{i+1} src": self.contrast_flip.source_mean[i, 0].item()}, step=self.local_iter+1)
             #     wandb.log({f"Class_{i+1} tgt": self.contrast_flip.target_mean[i, 0].item()}, step=self.local_iter+1)
@@ -422,8 +434,8 @@ class DACS(UDADecorator):
                     )
                 }
             )
-
-        return img
+        
+        return img_aug
 
     def forward_train(
         self,
@@ -489,7 +501,7 @@ class DACS(UDADecorator):
 
             if np.random.rand() < self.color_mix["freq"]:
                 img = self.intensity_normalization(
-                    img_original, gt_semantic_seg, means, stds
+                    img_original, gt_semantic_seg, means, stds, strong_parameters
                 )
 
         for name, m in self.get_model().named_modules():
