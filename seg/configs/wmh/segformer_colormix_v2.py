@@ -13,7 +13,8 @@
 
 # datatag = "_noph_bcg"
 datatag = "_noph_bcg_euler"
-dataset = "wmh_umc-nuhs"
+# dataset = "wmh_umc-nuhs"
+dataset = "wmh_nuhs-umc"
 num_classes = 3
 
 _base_ = [
