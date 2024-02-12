@@ -124,9 +124,12 @@ class DACS(UDADecorator):
 
         if self.enable_contrastive:
             self.contrastive = ContrastiveModule(cfg["contrastive_loss"])
-
+        
+        num_classes = self.get_model().decode_head.num_classes
+        
         if self.color_mix["type"] != "none":
             num_classes = self.get_model().decode_head.num_classes
+
             self.contrast_flip = ClasswiseMultAugmenter(
                 num_classes,
                 self.color_mix["norm_type"],
@@ -338,11 +341,11 @@ class DACS(UDADecorator):
             pseudo_weight *= valid_pseudo_mask.squeeze(1)
         return pseudo_weight
 
-    def intensity_normalization(self, img_original, gt_semantic_seg, means, stds, param):
+    def intensity_normalization(self, img_original, gt_semantic_seg, means, stds, param, img_tgt):
         # estimate tgt intensities using GT segmenation masks
 
         img_segm_hist = self.contrast_flip.color_mix(
-            img_original, gt_semantic_seg, means, stds
+            img_original, gt_semantic_seg, means, stds, img_tgt
         )
 
         # img, loss_val = self.contrast_flip.optimization_step(img_original, img_segm_hist, gt_semantic_seg)
@@ -352,10 +355,11 @@ class DACS(UDADecorator):
         img_polished = norm_net(img_original[:, 0, :, :].unsqueeze(1))
 
         if self.color_mix["suppress_bg"]:
-            ## automatically detect background value
+            # automatically detect background value
             # background_val = img_original[0, 0, 0, 0].item()
-            # foreground_mask = img_original[:, 0, :, :].unsqueeze(1) > 0
-            # background_mask = img_original[:, 0, :, :].unsqueeze(1) == background_val
+            # background_val = 0.03
+            # foreground_mask = img_original[:, 0, :, :].unsqueeze(1) > background_val
+            # background_mask = img_original[:, 0, :, :].unsqueeze(1) <= background_val
 
             foreground_mask = gt_semantic_seg > 0
             background_mask = gt_semantic_seg == 0
@@ -388,7 +392,7 @@ class DACS(UDADecorator):
             # print(f"{self.local_iter}, Using original, loss={norm_loss.item()}")
             img = img_original
 
-        if self.local_iter % 200 == 0:
+        if self.local_iter % 20 == 0:
             # for i in range(self.contrast_flip.n_classes):
             #     wandb.log({f"Class_{i+1} src": self.contrast_flip.source_mean[i, 0].item()}, step=self.local_iter+1)
             #     wandb.log({f"Class_{i+1} tgt": self.contrast_flip.target_mean[i, 0].item()}, step=self.local_iter+1)
@@ -491,7 +495,7 @@ class DACS(UDADecorator):
 
             if np.random.rand() < self.color_mix["freq"]:
                 img = self.intensity_normalization(
-                    img_original, gt_semantic_seg, means, stds, strong_parameters
+                    img_original, gt_semantic_seg, means, stds, strong_parameters, target_img
                 )
 
             if self.color_mix["coloraug"] and (np.random.rand() < 0.5):

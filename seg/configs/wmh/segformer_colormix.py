@@ -12,7 +12,8 @@
 # num_classes = 2
 
 datatag = "_noph_bcg"
-dataset = "wmh_umc-nuhs"
+# dataset = "wmh_umc-nuhs"
+dataset = "wmh_nuhs-umc"
 num_classes = 3
 
 _base_ = [
@@ -31,7 +32,7 @@ _base_ = [
 
 burnin = 0
 uda = dict(color_mix=dict(freq=1.0, suppress_bg=True, burnin=burnin, 
-                          coloraug=True, gradversion='v1'))
+                          coloraug=True, gradversion='v2'))
 
 norm_net = dict(norm_activation="linear", layers=[1, 1])
 # norm_net = dict(norm_activation="relu", layers=[1, 32, 1])

@@ -8,6 +8,7 @@ import torch
 import torch.nn as nn
 from mmseg.models.utils.dacs_normalization import NormNet
 from torch import nn, optim
+from skimage.exposure import match_histograms
 
 # import torchvision.transforms.functional as F
 # import cv2 as cv
@@ -99,10 +100,12 @@ class ClasswiseMultAugmenter:
         renorm_(source, mean, std)
         renorm_(target, mean, std)
 
-    def color_mix(self, data, mask, mean, std):
+    def color_mix(self, data, mask, mean, std, img_tgt):
         data_ = data.clone()
+        img_tgt_ = img_tgt.clone()
 
         denorm_(data_, mean, std)
+        denorm_(img_tgt_, mean, std)
 
         for i in range(self.n_classes):
             for c in range(3):
@@ -136,9 +139,12 @@ class ClasswiseMultAugmenter:
         #             img_tgt[i, c].cpu().numpy()
         #         ).to(data_[i, c].device)
 
+        # match_histograms(data_[:, 0, :, :], img_tgt[:, 0, :, :], channel_axis=-1)
+
         renorm_(data_, mean, std)
 
-        return data_[:, 0, :, :].unsqueeze(1)
+        # return data_[:, 0, :, :].unsqueeze(1)
+        return (data_[:, 0, :, :]).unsqueeze(1)
 
     # def _hungarian_match_cost(self, source, template, img_tgt):
     #     source = cv.blur(source, (2, 2))
