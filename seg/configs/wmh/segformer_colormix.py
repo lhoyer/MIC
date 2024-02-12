@@ -5,9 +5,10 @@
 # ---------------------------------------------------------------
 
 # WMH datasets
-datatag = "_euler"
+datatag = "_euler_noph"
 # datatag = ""
-dataset = "wmh_nuhs-umc"
+# dataset = "wmh_nuhs-umc"
+dataset = "wmh_umc-nuhs"
 num_classes = 2
 
 _base_ = [
@@ -24,8 +25,10 @@ _base_ = [
     "../_base_/schedules/poly10warm.py",
 ]
 
-burnin = -1
-uda = dict(color_mix=dict(freq=1.0, suppress_bg=True, burnin=burnin, burninthresh=1.0))
+burnin = 0
+uda = dict(color_mix=dict(freq=0.5, suppress_bg=True, burnin=burnin, 
+                          coloraug=True, gradversion='v1'))
+
 norm_net = dict(norm_activation="linear", layers=[1, 1])
 # norm_net = dict(norm_activation="relu", layers=[1, 32, 1])
 
@@ -62,7 +65,7 @@ optimizer = dict(
 )
 
 n_gpus = 1
-runner = dict(type="IterBasedRunner", max_iters=30000)
+runner = dict(type="IterBasedRunner", max_iters=40000)
 # Logging Configuration
 checkpoint_config = dict(by_epoch=False, interval=1000, max_keep_ckpts=1)
 evaluation = dict(interval=1000, metric="mDice")
@@ -77,6 +80,5 @@ name_decoder = "SegFormerHead"
 name_uda = "dacs"
 name_opt = "adamw_6e-05_pmTrue_poly10warm_1x2_30k"
 
-num_norm_layers = len(norm_net["layers"])-2
-norm = f"{norm_net['norm_activation']}{num_norm_layers}"
-name = f"{dataset}{datatag}_{name_architecture}_{norm}-burnin{burnin}-flag"
+norm = f"{norm_net['norm_activation']}"
+name = f"{dataset}{datatag}_{name_architecture}_{norm}-burnin{burnin}"

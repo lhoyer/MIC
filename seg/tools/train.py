@@ -186,10 +186,14 @@ def main(args):
     wandb_taks_name = dict_cfg["work_dir"].split("/")[-1]
     
     name_dataset = dict_cfg["name_dataset"].split("_")[0]
+    
     if 'color_mix' in dict_cfg["uda"]:
+        color_aug = '-coloraug' if dict_cfg ["uda"]["color_mix"]["coloraug"] else ""
         bcg_sup = '-bgs' if dict_cfg["uda"]["color_mix"]["suppress_bg"] else "-nobgs"
-        color_mix_flag = f'-colormix-{dict_cfg["uda"]["color_mix"]["freq"]:.2f}{bcg_sup}'
+        version = dict_cfg["uda"]["color_mix"]["gradversion"]
+        color_mix_flag = f'-colormix-{dict_cfg["uda"]["color_mix"]["freq"]:.2f}{bcg_sup}{color_aug}-{version}'
         wandb_taks_name = f"{wandb_taks_name}{color_mix_flag}"
+
     project_name = f"MIC-{name_dataset}"    
 
     run = wandb.init(

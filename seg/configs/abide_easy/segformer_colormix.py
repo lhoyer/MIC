@@ -3,10 +3,9 @@
 # Copyright (c) 2021-2022 ETH Zurich, Lukas Hoyer. All rights reserved.
 # Licensed under the Apache License, Version 2.0
 # ---------------------------------------------------------------
-
 datatag = ""
-datatag = "_euler"
-dataset = 'brain_hcp1-hcp2'
+datatag = "_euler_noph"
+dataset = 'brain_hcp1-abidec'
 num_classes=15
 
 _base_ = [
@@ -23,10 +22,8 @@ _base_ = [
     "../_base_/schedules/poly10warm.py",
 ]
 
-burnin = 0
-uda = dict(color_mix=dict(freq=0.5, suppress_bg=True, burnin=burnin, 
-                          coloraug=True, gradversion='v2'))
-
+burnin = 1000
+uda = dict(color_mix=dict(freq=1.0, suppress_bg=True, burnin=burnin, coloraug=True))
 norm_net = dict(norm_activation="linear", layers=[1, 1])
 # norm_net = dict(norm_activation="relu", layers=[1, 32, 1])
 
@@ -63,9 +60,9 @@ optimizer = dict(
 )
 
 n_gpus = 1
-runner = dict(type="IterBasedRunner", max_iters=20000)
+runner = dict(type="IterBasedRunner", max_iters=30000)
 # Logging Configuration
-checkpoint_config = dict(by_epoch=False, interval=5000, max_keep_ckpts=1)
+checkpoint_config = dict(by_epoch=False, interval=1000, max_keep_ckpts=1)
 evaluation = dict(interval=1000, metric="mDice")
 # Meta Information for Result Analysis
 
@@ -77,4 +74,4 @@ name_encoder = "ResNetV1c"
 name_decoder = "SegFormerHead"
 name_uda = "dacs"
 name_opt = "adamw_6e-05_pmTrue_poly10warm_1x2_30k"
-name = f"{dataset}{datatag}_{name_architecture}_{norm}-burnin{burnin}"
+name = f"{dataset}{datatag}_{name_architecture}_{norm}-burnin{burnin}-flagold"

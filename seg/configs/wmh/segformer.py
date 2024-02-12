@@ -6,8 +6,9 @@
 
 # WMH datasets
 datatag = ""
-# datatag = "_euler"
-dataset = "wmh_nuhs-umc"
+datatag = "_euler"
+# dataset = "wmh_nuhs-umc"
+dataset = "wmh_umc-nuhs"
 num_classes = 2
 
 _base_ = [
@@ -43,7 +44,7 @@ uda = dict(
 class_temp = 0.1
 per_image = False
 data = dict(
-    samples_per_gpu=4,
+    samples_per_gpu=8,
     workers_per_gpu=2,
     train=dict(
         # Rare Class Sampling
@@ -78,4 +79,4 @@ name_encoder = "ResNetV1c"
 name_decoder = "SegFormerHead"
 name_uda = "dacs"
 name_opt = "adamw_6e-05_pmTrue_poly10warm_1x2_30k"
-name = f"{dataset}{datatag}_{name_architecture}-debug"
+name = f"{dataset}{datatag}_{name_architecture}"

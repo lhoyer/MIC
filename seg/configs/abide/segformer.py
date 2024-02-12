@@ -6,7 +6,8 @@
 
 datatag = ""
 datatag = "_euler"
-dataset = 'brain_abidec-hcp2'
+# dataset = 'brain_abidec-hcp2'
+dataset = 'brain_hcp1-abidec'
 num_classes=15
 
 _base_ = [

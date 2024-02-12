@@ -388,16 +388,6 @@ class DACS(UDADecorator):
             # print(f"{self.local_iter}, Using original, loss={norm_loss.item()}")
             img = img_original
 
-        img_aug = color_jitter(
-            color_jitter=param["color_jitter"],
-            s=param["color_jitter_s"],
-            p=param["color_jitter_p"],
-            mean=param["mean"],
-            std=param["std"],
-            data=img.clone(),
-        )[0]
-        img_aug = gaussian_blur(blur=param["blur"], data=img_aug)[0]
-
         if self.local_iter % 200 == 0:
             # for i in range(self.contrast_flip.n_classes):
             #     wandb.log({f"Class_{i+1} src": self.contrast_flip.source_mean[i, 0].item()}, step=self.local_iter+1)
@@ -433,10 +423,10 @@ class DACS(UDADecorator):
                         np.concatenate([vis_img, vis_trg_img, vis_mixed_img], axis=1)
                     )
                 }
-            )
-        
-        return img_aug
-
+            )     
+               
+        return img
+    
     def forward_train(
         self,
         img,
@@ -504,10 +494,20 @@ class DACS(UDADecorator):
                     img_original, gt_semantic_seg, means, stds, strong_parameters
                 )
 
-        for name, m in self.get_model().named_modules():
-            if "normalization_net" in name:
-                # print('source', m.training)
-                m.training = False
+            if self.color_mix["coloraug"] and (np.random.rand() < 0.5):
+                img = color_jitter(
+                    color_jitter=strong_parameters["color_jitter"],
+                    s=strong_parameters["color_jitter_s"],
+                    p=strong_parameters["color_jitter_p"],
+                    mean=strong_parameters["mean"],
+                    std=strong_parameters["std"],
+                    data=img.clone(),
+                )[0]
+        
+        if self.color_mix["gradversion"] == 'v2':
+            for name, m in self.get_model().named_modules():
+                if "normalization_net" in name:
+                    m.training = False
 
         # Train on source images
         clean_losses = self.get_model().forward_train(
@@ -615,10 +615,10 @@ class DACS(UDADecorator):
                 mixed_img = torch.cat(mixed_img)
                 mixed_lbl = torch.cat(mixed_lbl)
 
-            # for name, m in self.get_model().named_modules():
-            #     if "normalization_net" in name:
-            #         print('mix:', m.training)
-            #         m.training = False
+            if self.color_mix["gradversion"] == 'v1':
+                for name, m in self.get_model().named_modules():
+                    if "normalization_net" in name:
+                        m.training = False
             
             mix_losses = self.get_model().forward_train(
                 mixed_img,
