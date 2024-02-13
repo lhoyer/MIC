@@ -234,8 +234,9 @@ def main():
         kwargs = {} if args.eval_options is None else args.eval_options
         if args.format_only:
             dataset.format_results(outputs, **kwargs)
-        if args.eval:
+        if args.eval:            
             res = dataset.evaluate(outputs, args.eval, **kwargs)
+
             print([k for k, v in res.items() if 'IoU' in k])
             print([round(v * 100, 1) for k, v in res.items() if 'IoU' in k])
 

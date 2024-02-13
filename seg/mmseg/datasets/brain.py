@@ -16,6 +16,31 @@ import mmcv
 from mmseg.core import eval_metrics
 import os
 
+from skimage.transform import rescale
+
+
+def convert_to_one_hot(mask, num_classes=3):
+    """
+    Convert a 3D segmentation mask to one-hot encoding.
+    
+    Parameters:
+        mask (numpy.ndarray): The 3D segmentation mask of shape [D, H, W].
+        num_classes (int): The number of unique class labels in the mask.
+    
+    Returns:
+        numpy.ndarray: The one-hot encoded mask of shape [N, D, H, W].
+    """
+    # Ensure mask is of integer type
+    mask = mask.astype(np.int32)
+    
+    # Initialize the one-hot encoded mask
+    one_hot = np.zeros((num_classes, *mask.shape), dtype=np.int32)
+    
+    # Populate the one-hot encoded mask
+    for i in range(num_classes):
+        one_hot[i, :, :, :] = (mask == i)
+    
+    return one_hot
 
 @DATASETS.register_module()
 class BrainDataset(CustomDataset):
@@ -28,6 +53,11 @@ class BrainDataset(CustomDataset):
                [107, 142, 35], [152, 251, 152], [70, 130, 180], [220, 20, 60],
                [255, 0, 0], [0, 0, 142], [0, 0, 70]]
     
+    VOLUME_SIZE = 256
+    resolution_proc =  [0.7, 0.7, 0.7]
+    rescale_masks = False
+    metric_version = 'new'
+
     def __init__(self, **kwargs):
         assert kwargs.get('split') in [None, 'train']
         if 'split' in kwargs:
@@ -36,9 +66,29 @@ class BrainDataset(CustomDataset):
             img_suffix='.png',
             seg_map_suffix='_labelTrainIds.png',
             split=None,
+            ignore_index=0,
             **kwargs)
 
         self.foreground_idx_start = 1
+
+
+    def split_volume(self, results, gt_seg_maps):
+        results_vol = []
+        gt_seg_maps_vol = []
+        cur_vol = []
+        cur_vol_gt = []
+        for i in range(len(results)):
+            result = results[i]#.reshape(-1)
+            gt_seg_map = gt_seg_maps[i]#.reshape(-1)
+            cur_vol.append(result)
+            cur_vol_gt.append(gt_seg_map)
+            if len(cur_vol) == self.VOLUME_SIZE:
+                results_vol.append(np.stack(cur_vol, axis=0))
+                gt_seg_maps_vol.append(np.stack(cur_vol_gt, axis=0))
+                cur_vol = []
+                cur_vol_gt = []
+
+        return results_vol, gt_seg_maps_vol
 
     def evaluate(self,
                  results,
@@ -74,8 +124,8 @@ class BrainDataset(CustomDataset):
             num_classes = len(self.CLASSES)
 
         # WandbLogPredictions(results, gt_seg_maps)
-
-        ret_metrics = eval_metrics(
+        if self.metric_version == 'old':
+            ret_metrics = eval_metrics(
             results,
             gt_seg_maps,
             num_classes,
@@ -83,7 +133,57 @@ class BrainDataset(CustomDataset):
             metric,
             label_map=self.label_map,
             reduce_zero_label=self.reduce_zero_label)
+        else:
+            ret_metrics = dict()
+            cur_vol = []
+            cur_vol_gt = []
+            cur_vol_id = 0
+            for i in range(len(results)):
+                result = results[i]#.reshape(-1)
+                gt_seg_map = gt_seg_maps[i]#.reshape(-1)
+                cur_vol.append(result)
+                cur_vol_gt.append(gt_seg_map)
+                if len(cur_vol) == self.VOLUME_SIZE:
+                    mask_predicted = np.stack(cur_vol, axis=0)
+                    mask_true = np.stack(cur_vol_gt, axis=0)
 
+                    if self.rescale_masks:
+                        mask_predicted = np.argmax(rescale(convert_to_one_hot(mask_predicted),
+                                            self.resolution_proc,
+                                            order=0,
+                                            preserve_range=True,
+                                            channel_axis=0,
+                                            mode='constant').astype(np.uint8), axis=0)
+
+                        mask_true = np.argmax(rescale(convert_to_one_hot(mask_true),
+                                            self.resolution_proc,
+                                            order=0,
+                                            preserve_range=True,
+                                            channel_axis=0,
+                                            mode='constant').astype(np.uint8), axis=0)
+
+                    ret_metrics_per_subject = eval_metrics(
+                        mask_predicted,
+                        mask_true,
+                        num_classes,
+                        self.ignore_index,
+                        metric,
+                        label_map=self.label_map,
+                        reduce_zero_label=self.reduce_zero_label)
+                    
+                    cur_vol = []
+                    cur_vol_gt = []
+                    cur_vol_id += 1
+
+                    for k in ret_metrics_per_subject:
+                        if k not in ret_metrics:
+                            ret_metrics[k] = np.zeros(ret_metrics_per_subject[k].shape)
+                        ret_metrics[k] += ret_metrics_per_subject[k]
+
+            for k in ret_metrics:
+                ret_metrics[k] = ret_metrics[k] / cur_vol_id
+        
+        
         # WandbLogImages(results, gt_seg_maps, num_classes)
         # quit()
         if self.CLASSES is None:
@@ -165,37 +265,49 @@ class BrainDataset(CustomDataset):
 
 
 @DATASETS.register_module()
-class WMHDataset(CustomDataset):
+class WMHDataset(BrainDataset):
     CLASSES = ('1', '2')
 
     PALETTE = [[153, 153, 153], [128, 64, 128]]
-
+    
+    VOLUME_SIZE = 48
+    rescale_masks = False
+    resolution_proc =  (3, 1, 1)
+    metric_version = 'new'
+    
     def __init__(self, **kwargs):
         assert kwargs.get('split') in [None, 'train']
         if 'split' in kwargs:
             kwargs.pop('split')
-        super(WMHDataset, self).__init__(
+        super(BrainDataset, self).__init__(
             img_suffix='.png',
             seg_map_suffix='_labelTrainIds.png',
             split=None,
+            ignore_index=0,
             **kwargs)
         
         self.foreground_idx_start = 1
 
 @DATASETS.register_module()
-class WMHDatasetBCG(CustomDataset):
+class WMHDatasetBCG(BrainDataset):
     CLASSES = ('1', '2', '3')
 
     PALETTE = [[153, 153, 153], [128, 64, 128], [244, 35, 232]]
+
+    VOLUME_SIZE = 48
+    rescale_masks = False
+    resolution_proc =  (3, 1, 1)
+    metric_version = 'new'
 
     def __init__(self, **kwargs):
         assert kwargs.get('split') in [None, 'train']
         if 'split' in kwargs:
             kwargs.pop('split')
-        super(WMHDatasetBCG, self).__init__(
+        super(BrainDataset, self).__init__(
             img_suffix='.png',
             seg_map_suffix='_labelTrainIds.png',
             split=None,
+            ignore_index=0,
             **kwargs)
         
         self.foreground_idx_start = 2
