@@ -20,7 +20,7 @@ from skimage.transform import rescale
 import wandb
 from mmseg.models.utils.wandb_log_images import WandbLogPredictions
 
-def convert_to_one_hot(mask, num_classes=3):
+def convert_to_one_hot(mask, num_classes):
     """
     Convert a 3D segmentation mask to one-hot encoding.
     
@@ -58,7 +58,6 @@ class BrainDataset(CustomDataset):
     resolution_proc =  [0.7, 0.7, 0.7]
     rescale_masks = True
     metric_version = 'new'
-    print('Rescale masks:', rescale_masks)
 
     def __init__(self, **kwargs):
         assert kwargs.get('split') in [None, 'train']
@@ -127,6 +126,7 @@ class BrainDataset(CustomDataset):
             num_classes = len(self.CLASSES)
 
         if self.metric_version == 'old':
+            print('Evaluating old metric!')
             ret_metrics = eval_metrics(
             results,
             gt_seg_maps,
@@ -150,14 +150,14 @@ class BrainDataset(CustomDataset):
                     mask_true = np.stack(cur_vol_gt, axis=0)
 
                     if self.rescale_masks:
-                        mask_predicted = np.argmax(rescale(convert_to_one_hot(mask_predicted),
+                        mask_predicted = np.argmax(rescale(convert_to_one_hot(mask_predicted, num_classes),
                                             self.resolution_proc,
                                             order=0,
                                             preserve_range=True,
                                             channel_axis=0,
                                             mode='constant').astype(np.uint8), axis=0)
 
-                        mask_true = np.argmax(rescale(convert_to_one_hot(mask_true),
+                        mask_true = np.argmax(rescale(convert_to_one_hot(mask_true, num_classes),
                                             self.resolution_proc,
                                             order=0,
                                             preserve_range=True,
@@ -288,7 +288,7 @@ class WMHDataset(BrainDataset):
     PALETTE = [[153, 153, 153], [128, 64, 128]]
     
     VOLUME_SIZE = 48
-    rescale_masks = False
+    rescale_masks = True
     resolution_proc =  (3, 1, 1)
     metric_version = 'new'
     
@@ -305,6 +305,7 @@ class WMHDataset(BrainDataset):
         
         self.foreground_idx_start = 1
 
+
 @DATASETS.register_module()
 class WMHDatasetBCG(BrainDataset):
     CLASSES = ('1', '2', '3')
@@ -312,7 +313,7 @@ class WMHDatasetBCG(BrainDataset):
     PALETTE = [[0, 0, 0], [153, 153, 153], [128, 64, 128]]
 
     VOLUME_SIZE = 48
-    rescale_masks = False
+    rescale_masks = True
     resolution_proc =  (3, 1, 1)
     metric_version = 'new'
 

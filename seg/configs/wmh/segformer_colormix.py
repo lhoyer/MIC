@@ -31,7 +31,7 @@ _base_ = [
     "../_base_/schedules/poly10warm.py",
 ]
 
-burnin = -1
+burnin = 0
 uda = dict(color_mix=dict(freq=1.0, suppress_bg=True, burnin=burnin, 
                           coloraug=True, gradversion='v1'))
 
@@ -87,4 +87,4 @@ name_uda = "dacs"
 name_opt = "adamw_6e-05_pmTrue_poly10warm_1x2_30k"
 
 norm = f"{norm_net['norm_activation']}"
-name = f"{dataset}{datatag}_{name_architecture}_{norm}-burnin{burnin}-newmetric"
+name = f"{dataset}{datatag}_{name_architecture}_{norm}-burnin{burnin}"

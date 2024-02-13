@@ -218,8 +218,9 @@ def main():
     dict_cfg = dict(cfg)
     wandb_taks_name = dict_cfg["work_dir"].split("/")[-1]
 
+    name_dataset = dict_cfg["name_dataset"].split("_")[0]
     run = wandb.init(
-        project='MIC-tests',
+        project=f'MIC-{name_dataset}-tests',
         config=cfg,
         name=wandb_taks_name,
         dir=dict_cfg["work_dir"],

@@ -5,8 +5,8 @@
 # ---------------------------------------------------------------
 
 # WMH datasets
-# datatag = "_euler_noph"
-datatag = "_noph"
+datatag = "_euler_noph"
+# datatag = "_noph"
 # dataset = "wmh_nuhs-umc"
 dataset = "wmh_umc-nuhs"
 num_classes = 2
@@ -15,7 +15,7 @@ num_classes = 2
 # datatag = "_noph_bcg_euler"
 # dataset = "wmh_umc-nuhs"
 # dataset = "wmh_nuhs-umc"
-num_classes = 3
+# num_classes = 3
 
 _base_ = [
     "../_base_/default_runtime.py",
@@ -31,7 +31,7 @@ _base_ = [
     "../_base_/schedules/poly10warm.py",
 ]
 
-burnin = -1
+burnin = 0
 uda = dict(color_mix=dict(freq=1.0, suppress_bg=True, burnin=burnin, 
                           coloraug=True, gradversion='v2'))
 
