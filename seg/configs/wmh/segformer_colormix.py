@@ -6,15 +6,15 @@
 
 # WMH datasets
 # datatag = "_euler_noph"
-# datatag = "_noph"
+datatag = "_noph"
 # dataset = "wmh_nuhs-umc"
-# dataset = "wmh_umc-nuhs"
-# num_classes = 2
+dataset = "wmh_umc-nuhs"
+num_classes = 2
 
 # datatag = "_noph_bcg"
-datatag = "_noph_bcg_euler"
+# datatag = "_noph_bcg_euler"
 # dataset = "wmh_umc-nuhs"
-dataset = "wmh_nuhs-umc"
+# dataset = "wmh_nuhs-umc"
 num_classes = 3
 
 _base_ = [
