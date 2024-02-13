@@ -215,6 +215,17 @@ def main():
     if args.eval_options is not None:
         efficient_test = args.eval_options.get('efficient_test', False)
     
+    dict_cfg = dict(cfg)
+    wandb_taks_name = dict_cfg["work_dir"].split("/")[-1]
+
+    run = wandb.init(
+        project='MIC-tests',
+        config=cfg,
+        name=wandb_taks_name,
+        dir=dict_cfg["work_dir"],
+        settings=wandb.Settings(_service_wait=300)
+    )
+
     if not distributed:
         model = MMDataParallel(model, device_ids=[0])        
         outputs = single_gpu_test(model, data_loader, args.show, args.show_dir,
@@ -236,11 +247,12 @@ def main():
         if args.format_only:
             dataset.format_results(outputs, **kwargs)
         if args.eval:            
-            res = dataset.evaluate(outputs, args.eval, **kwargs)
+            res = dataset.evaluate(outputs, args.eval, with_online_evaluation=True, **kwargs)
 
             print([k for k, v in res.items() if 'IoU' in k])
             print([round(v * 100, 1) for k, v in res.items() if 'IoU' in k])
 
+    wandb.finish()
 
 if __name__ == '__main__':
     main()

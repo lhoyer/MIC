@@ -17,7 +17,8 @@ from mmseg.core import eval_metrics
 import os
 
 from skimage.transform import rescale
-
+import wandb
+from mmseg.models.utils.wandb_log_images import WandbLogPredictions
 
 def convert_to_one_hot(mask, num_classes=3):
     """
@@ -96,6 +97,7 @@ class BrainDataset(CustomDataset):
                  metric='mIoU',
                  logger=None,
                  efficient_test=False,
+                 with_online_evaluation=False,
                  **kwargs):
         """Evaluate the dataset.
 
@@ -124,7 +126,6 @@ class BrainDataset(CustomDataset):
         else:
             num_classes = len(self.CLASSES)
 
-        # WandbLogPredictions(results, gt_seg_maps)
         if self.metric_version == 'old':
             ret_metrics = eval_metrics(
             results,
@@ -181,11 +182,20 @@ class BrainDataset(CustomDataset):
                             ret_metrics[k] = np.zeros(ret_metrics_per_subject[k].shape)
                         ret_metrics[k] += ret_metrics_per_subject[k]
 
+                    if with_online_evaluation:
+                        dice_per_class = dict(zip(self.CLASSES, ret_metrics_per_subject['Dice']))
+                        wandb.log({f'Dice per subject': dice_per_class})
+
             for k in ret_metrics:
                 ret_metrics[k] = ret_metrics[k] / cur_vol_id
         
-        
-        # WandbLogImages(results, gt_seg_maps, num_classes)
+        if with_online_evaluation:
+            dice_per_class = dict(zip(self.CLASSES, ret_metrics['Dice']))
+            wandb.log({f'Dice per subject total': dice_per_class})
+
+        if with_online_evaluation:
+            WandbLogPredictions(results, gt_seg_maps, self.PALETTE)
+
         # quit()
         if self.CLASSES is None:
             class_names = tuple(range(num_classes))
@@ -197,6 +207,7 @@ class BrainDataset(CustomDataset):
             ret_metric: np.round(np.nanmean(ret_metric_value) * 100, 2)
             for ret_metric, ret_metric_value in ret_metrics.items()
         })
+        
 
         ret_metrics_summary_foreground = OrderedDict({
             ret_metric: np.round(np.nanmean(ret_metric_value[self.foreground_idx_start:]) * 100, 2)
@@ -250,6 +261,11 @@ class BrainDataset(CustomDataset):
                 eval_results[key + '-foreground'] = value / 100.0
             else:
                 eval_results['m' + key + '-foreground'] = value / 100.0
+        
+        if with_online_evaluation:
+            for k in eval_results:
+                if 'Dice' in k:
+                    wandb.log({f'Final metrics/{k}': eval_results[k]})
 
         ret_metrics_class.pop('Class', None)
         for key, value in ret_metrics_class.items():
@@ -293,7 +309,7 @@ class WMHDataset(BrainDataset):
 class WMHDatasetBCG(BrainDataset):
     CLASSES = ('1', '2', '3')
 
-    PALETTE = [[153, 153, 153], [128, 64, 128], [244, 35, 232]]
+    PALETTE = [[0, 0, 0], [153, 153, 153], [128, 64, 128]]
 
     VOLUME_SIZE = 48
     rescale_masks = False

@@ -61,7 +61,7 @@ PALETTE = [[153, 153, 153], [128, 64, 128], [244, 35, 232], [70, 70, 70], [102, 
                [107, 142, 35], [152, 251, 152], [70, 130, 180], [220, 20, 60],
                [255, 0, 0], [0, 0, 142], [0, 0, 70]]
 
-def convert_3d(masks):
+def convert_3d(masks, PALETTE):
     masks_3d = np.zeros([3, 256, 256])
     for i in range(256):
         for j in range(256):
@@ -69,12 +69,12 @@ def convert_3d(masks):
             masks_3d[:, i, j] = np.array(PALETTE[l])
     return masks_3d
 
-def WandbLogPredictions(results, gt_seg_maps, max_images=8):
+def WandbLogPredictions(results, gt_seg_maps, PALETTE, max_images=16):
     max_images = min(max_images, len(results))
     idx = list(np.random.choice(len(results), max_images))
 
-    masks = make_grid([torch.Tensor(convert_3d(results[i])) for i in idx] \
-                        + [torch.Tensor(convert_3d(gt_seg_maps[i]))for i in idx], 
+    masks = make_grid([torch.Tensor(convert_3d(results[i], PALETTE)) for i in idx] \
+                        + [torch.Tensor(convert_3d(gt_seg_maps[i], PALETTE))for i in idx], 
                         nrow=max_images).permute(1, 2, 0).numpy()
 
     results_pil = Image.fromarray(np.uint8(masks)).convert('RGB')
