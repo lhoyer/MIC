@@ -5,8 +5,8 @@
 # ---------------------------------------------------------------
 
 # WMH datasets
-# datatag = "_euler_noph"
-datatag = "_noph"
+datatag = "_euler_noph"
+# datatag = "_noph"
 # dataset = "wmh_nuhs-umc"
 dataset = "wmh_umc-nuhs"
 num_classes = 2
@@ -15,7 +15,7 @@ num_classes = 2
 # datatag = "_noph_bcg_euler"
 # dataset = "wmh_umc-nuhs"
 # dataset = "wmh_nuhs-umc"
-num_classes = 3
+# num_classes = 3
 
 _base_ = [
     "../_base_/default_runtime.py",
@@ -87,4 +87,4 @@ name_uda = "dacs"
 name_opt = "adamw_6e-05_pmTrue_poly10warm_1x2_30k"
 
 norm = f"{norm_net['norm_activation']}"
-name = f"{dataset}{datatag}_{name_architecture}_{norm}-burnin{burnin}"
+name = f"{dataset}{datatag}_{name_architecture}_{norm}-burnin{burnin}-newmetric"

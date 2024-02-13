@@ -7,7 +7,8 @@
 
 #!/bin/bash
 
-FOLDERPATH='/usr/bmicnas02/data-biwi-01/klanna_data/results/MIC/work_dirs/local-basic/'
+# FOLDERPATH='/usr/bmicnas02/data-biwi-01/klanna_data/results/MIC/work_dirs/local-basic/'
+FOLDERPATH='/cluster/work/cvl/klanna/MIC-results/work_dirs/local-basic/'
 TEST_ROOT=$1
 CONFIG_FILE="${FOLDERPATH}${TEST_ROOT}/*${TEST_ROOT: -1}.py"  # or .json for old configs
 CHECKPOINT_FILE="${FOLDERPATH}${TEST_ROOT}/latest.pth"

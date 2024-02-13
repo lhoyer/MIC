@@ -48,15 +48,16 @@ class BrainDataset(CustomDataset):
                '7', '8', '9', '10', '11',
                '12', '13', '14', '15')
 
-    PALETTE = [[153, 153, 153], [128, 64, 128], [244, 35, 232], [70, 70, 70], [102, 102, 156],
-               [190, 153, 153], [250, 170, 30], [220, 220, 0],
+    PALETTE = [[153, 153, 153], [128, 64, 128], [244, 35, 232], [70, 70, 70], 
+               [102, 102, 156], [190, 153, 153], [250, 170, 30], [220, 220, 0],
                [107, 142, 35], [152, 251, 152], [70, 130, 180], [220, 20, 60],
                [255, 0, 0], [0, 0, 142], [0, 0, 70]]
     
     VOLUME_SIZE = 256
     resolution_proc =  [0.7, 0.7, 0.7]
-    rescale_masks = False
+    rescale_masks = True
     metric_version = 'new'
+    print('Rescale masks:', rescale_masks)
 
     def __init__(self, **kwargs):
         assert kwargs.get('split') in [None, 'train']

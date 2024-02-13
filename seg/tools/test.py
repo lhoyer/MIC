@@ -16,6 +16,7 @@ from mmcv.utils import DictAction
 from mmseg.apis import multi_gpu_test, single_gpu_test
 from mmseg.datasets import build_dataloader, build_dataset
 from mmseg.models import build_segmentor
+import wandb
 
 def update_legacy_cfg(cfg):
     # The saved json config does not differentiate between list and tuple
