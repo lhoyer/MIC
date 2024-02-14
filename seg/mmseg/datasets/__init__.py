@@ -10,7 +10,7 @@ from .dataset_wrappers import ConcatDataset, RepeatDataset
 from .gta import GTADataset
 from .synthia import SynthiaDataset
 from .uda_dataset import UDADataset
-from .brain import BrainDataset, WMHDataset, WMHDatasetBCG
+from .brain import BrainDataset, WMHDataset, WMHDatasetBCG, SpineDataset
 from .prostate import prostateDataset
 from .cardiac import cardiacDataset
 
@@ -29,6 +29,7 @@ __all__ = [
     'ACDCDataset',
     'DarkZurichDataset',
     'BrainDataset',
+    'SpineDataset',
     'WMHDataset',
     'WMHDatasetBCG',
     'prostateDataset',

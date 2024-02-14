@@ -4,10 +4,10 @@
 # Licensed under the Apache License, Version 2.0
 # ---------------------------------------------------------------
 
-data_root = '/cluster/work/cvl/klanna/lumbarspine/'
+data_root='/itet-stor/klanna/bmicdatasets_bmicnas02/Sharing/klanna/da_data/lumbarspine/'
 
 # dataset settings
-dataset_type = 'BrainDataset'
+dataset_type = 'SpineDataset'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 crop_size = (256, 256)
@@ -24,7 +24,7 @@ source_train_pipeline = [
     # dict(type='MedPhotoMetricDistortion', data_aug_ratio=0.25),
     # dict(type='RandomCrop', crop_size=crop_size, cat_max_ratio=0.75),
     dict(type='RandomFlip', prob=0.0),
-    dict(type='PhotoMetricDistortion'),  # is applied later in dacs.py
+    # dict(type='PhotoMetricDistortion'),  # is applied later in dacs.py
     dict(type='Normalize', **img_norm_cfg),
     # dict(type='Pad', size=crop_size, pad_val=0, seg_pad_val=0),
     dict(type='DefaultFormatBundle'),
@@ -68,7 +68,7 @@ data = dict(
         type='UDADataset',
         source=dict(
             type='SpineDataset',
-            data_root=f'{data_root}/MRSpineSeg/',
+            data_root=f'{data_root}/Dataset7/',
             img_dir='images/train',
             ann_dir='labels/train',
             pipeline=source_train_pipeline),

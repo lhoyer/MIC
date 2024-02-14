@@ -4,8 +4,8 @@
 # Licensed under the Apache License, Version 2.0
 # ---------------------------------------------------------------
 
-# datatag = ""
-datatag = "_euler"
+datatag = ""
+# datatag = "_euler"
 dataset = "spine_mrss-dataset7"
 num_classes = 11
 

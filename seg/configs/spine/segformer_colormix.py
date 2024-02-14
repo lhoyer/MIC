@@ -4,8 +4,8 @@
 # Licensed under the Apache License, Version 2.0
 # ---------------------------------------------------------------
 
-# datatag = ""
-datatag = "_euler"
+datatag = ""
+# datatag = "_euler"
 dataset = "spine_mrss-dataset7"
 num_classes = 11
 
@@ -23,8 +23,10 @@ _base_ = [
     "../_base_/schedules/poly10warm.py",
 ]
 
-burnin = 0
-uda = dict(color_mix=dict(freq=1.0, suppress_bg=True, burnin=burnin, coloraug=True))
+burnin = -1
+uda = dict(color_mix=dict(freq=1.0, suppress_bg=True, burnin=burnin, 
+                          coloraug=False, gradversion='v1'))
+
 norm_net = dict(norm_activation="linear", layers=[1, 1])
 # norm_net = dict(norm_activation="relu", layers=[1, 32, 1])
 

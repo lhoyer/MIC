@@ -4,7 +4,8 @@
 # Licensed under the Apache License, Version 2.0
 # ---------------------------------------------------------------
 
-data_root = '/cluster/work/cvl/klanna/lumbarspine/'
+# data_root = '/cluster/work/cvl/klanna/lumbarspine/'
+data_root='/itet-stor/klanna/bmicdatasets_bmicnas02/Sharing/klanna/da_data/lumbarspine/'
 
 # dataset settings
 dataset_type = 'BrainDataset'

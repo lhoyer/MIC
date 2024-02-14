@@ -288,9 +288,9 @@ class WMHDataset(BrainDataset):
     PALETTE = [[153, 153, 153], [128, 64, 128]]
     
     VOLUME_SIZE = 48
-    rescale_masks = True
+    rescale_masks = False
     resolution_proc =  (3, 1, 1)
-    metric_version = 'new'
+    metric_version = 'old'
     
     def __init__(self, **kwargs):
         assert kwargs.get('split') in [None, 'train']
@@ -300,7 +300,7 @@ class WMHDataset(BrainDataset):
             img_suffix='.png',
             seg_map_suffix='_labelTrainIds.png',
             split=None,
-            ignore_index=0,
+            ignore_index=255,
             **kwargs)
         
         self.foreground_idx_start = 1
@@ -313,9 +313,9 @@ class WMHDatasetBCG(BrainDataset):
     PALETTE = [[0, 0, 0], [153, 153, 153], [128, 64, 128]]
 
     VOLUME_SIZE = 48
-    rescale_masks = True
+    rescale_masks = False
     resolution_proc =  (3, 1, 1)
-    metric_version = 'new'
+    metric_version = 'old'
 
     def __init__(self, **kwargs):
         assert kwargs.get('split') in [None, 'train']
@@ -329,3 +329,31 @@ class WMHDatasetBCG(BrainDataset):
             **kwargs)
         
         self.foreground_idx_start = 2
+
+
+@DATASETS.register_module()
+class SpineDataset(BrainDataset):
+    CLASSES = ('1', '2', '3', '4', '5', '6',
+               '7', '8', '9', '10', '11')
+
+    PALETTE = [[153, 153, 153], [128, 64, 128], [244, 35, 232], [70, 70, 70], 
+               [102, 102, 156], [190, 153, 153], [250, 170, 30], [220, 220, 0],
+               [107, 142, 35], [152, 251, 152], [70, 130, 180]]
+
+    VOLUME_SIZE = 78
+    rescale_masks = False
+    resolution_proc =  (1, 1, 1)
+    metric_version = 'new'
+
+    def __init__(self, **kwargs):
+        assert kwargs.get('split') in [None, 'train']
+        if 'split' in kwargs:
+            kwargs.pop('split')
+        super(BrainDataset, self).__init__(
+            img_suffix='.png',
+            seg_map_suffix='_labelTrainIds.png',
+            split=None,
+            ignore_index=0,
+            **kwargs)
+        
+        self.foreground_idx_start = 1
