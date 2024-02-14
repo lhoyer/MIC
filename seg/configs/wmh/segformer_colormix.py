@@ -34,7 +34,7 @@ _base_ = [
 burnin = -1
 uda = dict(color_mix=dict(freq=1.0, suppress_bg=True, burnin=burnin, 
                           coloraug=True, gradversion='v1', 
-                          burninthresh=0.1))
+                          burninthresh=0.1, color_jitter_s=0.1))
 
 norm_net = dict(norm_activation="linear", layers=[1, 1])
 # norm_net = dict(norm_activation="relu", layers=[1, 32, 1])
@@ -54,14 +54,15 @@ data = dict(
     train=dict(
         # Rare Class Sampling
         rare_class_sampling=dict(
-            min_pixels=4, class_temp=class_temp, min_crop_ratio=0.5, per_image=per_image
+            min_pixels=2, class_temp=class_temp, min_crop_ratio=0.5, per_image=per_image
         )
     ),
 )
 # Optimizer Hyperparameters
 optimizer_config = None
 optimizer = dict(
-    lr=6e-05,
+    # lr=6e-05,
+    lr=6e-04,
     paramwise_cfg=dict(
         custom_keys=dict(
             head=dict(lr_mult=10.0),
@@ -78,7 +79,6 @@ checkpoint_config = dict(by_epoch=False, interval=1000, max_keep_ckpts=1)
 evaluation = dict(interval=1000, metric="mDice")
 # Meta Information for Result Analysis
 
-
 exp = "basic"
 name_dataset = f"{dataset}{datatag}"
 name_architecture = "segformer_r101"
@@ -88,4 +88,4 @@ name_uda = "dacs"
 name_opt = "adamw_6e-05_pmTrue_poly10warm_1x2_30k"
 
 norm = f"{norm_net['norm_activation']}"
-name = f"{dataset}{datatag}_{name_architecture}_{norm}-burnin{burnin}-old"
+name = f"{dataset}{datatag}_{name_architecture}_{norm}-burnin{burnin}-newmetric"

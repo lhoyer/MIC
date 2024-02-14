@@ -17,6 +17,8 @@ uda = dict(
         "burnin": 0,
         "burninthresh": 1.0,
         "coloraug": False,
+        "color_jitter_s": 0.1,
+        "color_jitter_p": 0.25,
         "gradversion": 'v1'
     },
     pseudo_weight_ignore_top=0,

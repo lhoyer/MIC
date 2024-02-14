@@ -41,7 +41,7 @@ from mmseg.models.utils.dacs_transforms import (
     get_class_masks,
     get_mean_std,
     strong_transform,
-    color_jitter,
+    color_jitter_med,
     gaussian_blur,
     ClasswiseMultAugmenter,
 )
@@ -341,25 +341,18 @@ class DACS(UDADecorator):
             pseudo_weight *= valid_pseudo_mask.squeeze(1)
         return pseudo_weight
 
-    def intensity_normalization(self, img_original, gt_semantic_seg, means, stds, param):
+    def intensity_normalization(self, img_original, gt_semantic_seg, means, stds):
         # estimate tgt intensities using GT segmenation masks
 
         img_segm_hist = self.contrast_flip.color_mix(
             img_original, gt_semantic_seg, means, stds
         )
 
-        # img, loss_val = self.contrast_flip.optimization_step(img_original, img_segm_hist, gt_semantic_seg)
-
         # update normalization net
         norm_net = self.get_model().normalization_net
         img_polished = norm_net(img_original[:, 0, :, :].unsqueeze(1))
 
         if self.color_mix["suppress_bg"]:
-            # automatically detect background value
-            # background_val = img_original[0, 0, 0, 0].item()
-            # background_val = 0.03
-            # foreground_mask = img_original[:, 0, :, :].unsqueeze(1) > background_val
-            # background_mask = img_original[:, 0, :, :].unsqueeze(1) <= background_val
 
             foreground_mask = gt_semantic_seg > 0
             background_mask = gt_semantic_seg == 0
@@ -374,6 +367,7 @@ class DACS(UDADecorator):
 
         if norm_loss.item() < self.color_mix["burninthresh"]:
             self.color_mix_flag = True
+        # self.color_mix_flag = norm_loss.item() < self.color_mix["burninthresh"]
 
         if (
             (self.local_iter >= self.color_mix["burnin"])
@@ -384,12 +378,11 @@ class DACS(UDADecorator):
 
             if self.color_mix["suppress_bg"]:
                 img[background_mask] = img_segm_hist[background_mask]
-                # img[background_mask] = img_original[:, 0, :, :].unsqueeze(1)[background_mask].mean().item()
 
             img = img.repeat(1, 3, 1, 1)
-            # print(f"{self.local_iter}, Using predicted, loss={norm_loss.item()}")
+        elif random.uniform(0, 1) < 0.5:
+            img = img_segm_hist.repeat(1, 3, 1, 1)
         else:
-            # print(f"{self.local_iter}, Using original, loss={norm_loss.item()}")
             img = img_original
 
         if self.local_iter % 200 == 0:
@@ -430,20 +423,14 @@ class DACS(UDADecorator):
                 }
             )     
                
-        if self.color_mix["coloraug"] and (np.random.rand() < 0.5):
-            img_aug = color_jitter(
-                color_jitter=param["color_jitter"],
-                s=param["color_jitter_s"],
-                p=param["color_jitter_p"],
-                mean=param["mean"],
-                std=param["std"],
+        return color_jitter_med(
+                color_jitter=random.uniform(0, 1),
+                s=self.color_mix['color_jitter_s'],
+                p=self.color_mix['color_jitter_p'],
+                mean=means,
+                std=stds,
                 data=img.clone(),
             )[0]
-            # img_aug = gaussian_blur(blur=param["blur"], data=img_aug)[0]
-
-            return img_aug
-        else:
-            return img
     
     def forward_train(
         self,
@@ -505,8 +492,13 @@ class DACS(UDADecorator):
         if self.color_mix["type"] == "source":
             if np.random.rand() < self.color_mix["freq"]:
                 img = self.intensity_normalization(
-                    img_original, gt_semantic_seg, means, stds, strong_parameters
+                    img_original, gt_semantic_seg, means, stds
                 )
+
+        if self.color_mix['gradversion'] == 'v2':
+            for name, m in self.get_model().named_modules():
+                if "normalization_net" in name:
+                    m.training = False
 
         # Train on source images
         clean_losses = self.get_model().forward_train(
@@ -614,10 +606,11 @@ class DACS(UDADecorator):
                 mixed_img = torch.cat(mixed_img)
                 mixed_lbl = torch.cat(mixed_lbl)
 
-            for name, m in self.get_model().named_modules():
-                if "normalization_net" in name:
-                    m.training = False
-            
+            if self.color_mix['gradversion'] == 'v1':
+                for name, m in self.get_model().named_modules():
+                    if "normalization_net" in name:
+                        m.training = False
+                
             mix_losses = self.get_model().forward_train(
                 mixed_img,
                 img_metas,
