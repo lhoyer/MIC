@@ -6,7 +6,8 @@
 
 # WMH datasets
 datatag = ""
-datatag = "_euler"
+datatag = "_v2_euler"
+# datatag = "_euler"
 # dataset = "wmh_nuhs-umc"
 dataset = "wmh_umc-nuhs"
 num_classes = 2
@@ -56,7 +57,8 @@ data = dict(
 # Optimizer Hyperparameters
 optimizer_config = None
 optimizer = dict(
-    lr=6e-05,
+    # lr=6e-05,
+    lr=6e-04,
     paramwise_cfg=dict(
         custom_keys=dict(
             head=dict(lr_mult=10.0),
@@ -69,7 +71,7 @@ n_gpus = 1
 runner = dict(type="IterBasedRunner", max_iters=30000)
 # Logging Configuration
 checkpoint_config = dict(by_epoch=False, interval=1000, max_keep_ckpts=1)
-evaluation = dict(interval=100, metric="mDice")
+evaluation = dict(interval=1000, metric="mDice")
 
 # Meta Information for Result Analysis
 exp = "basic"

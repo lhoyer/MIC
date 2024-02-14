@@ -25,7 +25,8 @@ _base_ = [
 
 burnin = -1
 uda = dict(color_mix=dict(freq=1.0, suppress_bg=True, burnin=burnin, 
-                          coloraug=True, gradversion='v2'))
+                          coloraug=True, gradversion='v1', 
+                          burninthresh=0.1, color_jitter_s=0.1))
 
 norm_net = dict(norm_activation="linear", layers=[1, 1])
 # norm_net = dict(norm_activation="relu", layers=[1, 32, 1])
