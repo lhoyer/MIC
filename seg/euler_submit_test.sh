@@ -13,4 +13,4 @@ conda activate /cluster/project/cvl/klanna/conda-envs/mic-mmcv-full-prebuilt
 
 WORKPATH=/cluster/work/cvl/klanna/MIC-results/ 
 
-sh ./test_med.sh "$@"
+sh ./test_med.sh "$@" e
