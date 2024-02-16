@@ -408,8 +408,8 @@ class WMHDatasetBCG(BrainDataset):
 
 
 @DATASETS.register_module()
-class SpineDataset(BrainDataset):
-    CLASSES = ("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11")
+class SpineMRIDataset(BrainDataset):
+    CLASSES = ("B", "L1", "L2", "L3", "L4", "L5")
 
     PALETTE = [
         [153, 153, 153],
@@ -418,14 +418,41 @@ class SpineDataset(BrainDataset):
         [70, 70, 70],
         [102, 102, 156],
         [190, 153, 153],
-        [250, 170, 30],
-        [220, 220, 0],
-        [107, 142, 35],
-        [152, 251, 152],
-        [70, 130, 180],
     ]
 
-    VOLUME_SIZE = 78
+    VOLUME_SIZE = 12
+    metric_version = "new"
+
+    def __init__(self, **kwargs):
+        assert kwargs.get("split") in [None, "train"]
+        if "split" in kwargs:
+            kwargs.pop("split")
+        super(BrainDataset, self).__init__(
+            img_suffix=".png",
+            seg_map_suffix="_labelTrainIds.png",
+            split=None,
+            ignore_index=0,
+            **kwargs,
+        )
+
+        self.foreground_idx_start = 1
+        self.volume_meta = self.read_volume_meta()  
+
+
+@DATASETS.register_module()
+class SpineCTDataset(BrainDataset):
+    CLASSES = ("B", "L1", "L2", "L3", "L4", "L5")
+
+    PALETTE = [
+        [153, 153, 153],
+        [128, 64, 128],
+        [244, 35, 232],
+        [70, 70, 70],
+        [102, 102, 156],
+        [190, 153, 153],
+    ]
+
+    VOLUME_SIZE = 100
     metric_version = "new"
 
     def __init__(self, **kwargs):
