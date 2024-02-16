@@ -101,7 +101,7 @@ class DACS(UDADecorator):
             cfg["enable_contrastive"] if "enable_contrastive" in cfg else False
         )
         self.burnin = cfg["burnin"] if "burnin" in cfg else 0
-        self.color_mix = cfg["color_mix"] if "color_mix" in cfg else dict(type="none")
+        self.color_mix = cfg["color_mix"] if "color_mix" in cfg else dict(type="none", gradversion="none")
 
         # assert self.mix == 'class'
         if self.mix != "class":

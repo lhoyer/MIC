@@ -25,7 +25,8 @@ _base_ = [
 
 burnin = -1
 uda = dict(color_mix=dict(freq=1.0, suppress_bg=True, burnin=burnin, 
-                          coloraug=True, gradversion='v1'))
+                          coloraug=True, gradversion='v1', 
+                          burninthresh=0.1, color_jitter_s=0.1))
 
 norm_net = dict(norm_activation="linear", layers=[1, 1])
 # norm_net = dict(norm_activation="relu", layers=[1, 32, 1])
@@ -77,4 +78,4 @@ name_encoder = "ResNetV1c"
 name_decoder = "SegFormerHead"
 name_uda = "dacs"
 name_opt = "adamw_6e-05_pmTrue_poly10warm_1x2_30k"
-name = f"{dataset}{datatag}_{name_architecture}_{norm}-burnin{burnin}"
+name = f"{dataset}{datatag}_{name_architecture}_{norm}-burnin{burnin}-NM"
