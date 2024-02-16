@@ -4,10 +4,10 @@
 # Licensed under the Apache License, Version 2.0
 # ---------------------------------------------------------------
 
-data_root = '/cluster/work/cvl/klanna/brain/'
+data_root = '/cluster/work/cvl/klanna/lumbarspine/'
 
 # dataset settings
-dataset_type = 'BrainDataset'
+dataset_type = 'SpineMRIDataset'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 crop_size = (256, 256)
@@ -17,10 +17,16 @@ source_train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations'),
     dict(type='Resize', img_scale=img_scale),
+    # dict(type='ContrastFlip', data_aug_ratio=1.0),  
+    # dict(type='CLAHE'),
     dict(type='ElasticTransformation', data_aug_ratio=0.25),  
     dict(type='StructuralAug', data_aug_ratio=0.25),
+    # dict(type='MedPhotoMetricDistortion', data_aug_ratio=0.25),
+    # dict(type='RandomCrop', crop_size=crop_size, cat_max_ratio=0.75),
     dict(type='RandomFlip', prob=0.0),
+    dict(type='PhotoMetricDistortion'),  # is applied later in dacs.py
     dict(type='Normalize', **img_norm_cfg),
+    # dict(type='Pad', size=crop_size, pad_val=0, seg_pad_val=0),
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_semantic_seg']),
 ]
@@ -28,9 +34,12 @@ target_train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations'),
     dict(type='Resize', img_scale=img_scale),
-    dict(type='ElasticTransformation', data_aug_ratio=0.25),  
+    dict(type='ElasticTransformation', data_aug_ratio=0.25),
     dict(type='StructuralAug', data_aug_ratio=0.25),
+    # dict(type='RandomCrop', crop_size=crop_size),
     dict(type='RandomFlip', prob=0.0),
+    # dict(type='MedPhotoMetricDistortion', data_aug_ratio=0.25),
+    # dict(type='PhotoMetricDistortion'),  # is applied later in dacs.py
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size=crop_size, pad_val=0, seg_pad_val=0),
     dict(type='DefaultFormatBundle'),
@@ -41,6 +50,9 @@ test_pipeline = [
     dict(
         type='MultiScaleFlipAug',
         img_scale=(256, 256),
+        # MultiScaleFlipAug is disabled by not providing img_ratios and
+        # setting flip=False
+        # img_ratios=[0.5, 0.75, 1.0, 1.25, 1.5, 1.75],
         flip=False,
         transforms=[
             dict(type='Resize', keep_ratio=True),
@@ -56,26 +68,26 @@ data = dict(
     train=dict(
         type='UDADataset',
         source=dict(
-            type='WMHDatasetBCG',
-            data_root=f'{data_root}/umc_bcg/',
+            type='SpineMRIDataset',
+            data_root=f'{data_root}/MRSpineSegV/',
             img_dir='images/train',
             ann_dir='labels/train',
             pipeline=source_train_pipeline),
         target=dict(
-            type='WMHDatasetBCG',
-            data_root=f'{data_root}/nuhs_bcg/',
+            type='SpineMRIDataset',
+            data_root=f'{data_root}/MRSpineSegV/',
             img_dir='images/train',
             ann_dir='labels/train',
             pipeline=target_train_pipeline)),
     val=dict(
-        type='WMHDatasetBCG',
-        data_root=f'{data_root}/nuhs_bcg/',
+        type='SpineMRIDataset',
+        data_root=f'{data_root}/MRSpineSegV/',
         img_dir='images/test',
         ann_dir='labels/test',
         pipeline=test_pipeline),
     test=dict(
-        type='WMHDatasetBCG',
-        data_root=f'{data_root}/nuhs_bcg/',
+        type='SpineMRIDataset',
+        data_root=f'{data_root}/MRSpineSegV/',
         img_dir='images/test',
         ann_dir='labels/test',
         pipeline=test_pipeline))

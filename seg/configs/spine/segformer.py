@@ -7,7 +7,7 @@
 datatag = ""
 # datatag = "_euler"
 dataset = "spine_mrss-dataset7"
-num_classes = 11
+num_classes = 6
 
 _base_ = [
     "../_base_/default_runtime.py",

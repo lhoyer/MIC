@@ -4,12 +4,12 @@
 # Licensed under the Apache License, Version 2.0
 # ---------------------------------------------------------------
 
-data_root = '/cluster/work/cvl/klanna/brain/'
-
 # dataset settings
 dataset_type = 'BrainDataset'
+data_root = '/cluster/work/cvl/klanna/brain/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+
 crop_size = (256, 256)
 # img_scale = (320, 320)
 img_scale = (256, 256)
@@ -28,7 +28,7 @@ target_train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations'),
     dict(type='Resize', img_scale=img_scale),
-    dict(type='ElasticTransformation', data_aug_ratio=0.25),  
+    dict(type='ElasticTransformation', data_aug_ratio=0.25),
     dict(type='StructuralAug', data_aug_ratio=0.25),
     dict(type='RandomFlip', prob=0.0),
     dict(type='Normalize', **img_norm_cfg),
@@ -41,6 +41,9 @@ test_pipeline = [
     dict(
         type='MultiScaleFlipAug',
         img_scale=(256, 256),
+        # MultiScaleFlipAug is disabled by not providing img_ratios and
+        # setting flip=False
+        # img_ratios=[0.5, 0.75, 1.0, 1.25, 1.5, 1.75],
         flip=False,
         transforms=[
             dict(type='Resize', keep_ratio=True),
@@ -52,30 +55,30 @@ test_pipeline = [
 ]
 data = dict(
     samples_per_gpu=8,
-    workers_per_gpu=4,
+    workers_per_gpu=2,
     train=dict(
         type='UDADataset',
         source=dict(
-            type='WMHDatasetBCG',
-            data_root=f'{data_root}/umc_bcg/',
+            type='BrainDataset',
+            data_root=f'{data_root}/hcp1/',
             img_dir='images/train',
             ann_dir='labels/train',
             pipeline=source_train_pipeline),
         target=dict(
-            type='WMHDatasetBCG',
-            data_root=f'{data_root}/nuhs_bcg/',
+            type='BrainDataset',
+            data_root=f'{data_root}/abide_caltech/',
             img_dir='images/train',
             ann_dir='labels/train',
             pipeline=target_train_pipeline)),
     val=dict(
-        type='WMHDatasetBCG',
-        data_root=f'{data_root}/nuhs_bcg/',
+        type='BrainDataset',
+        data_root=f'{data_root}/abide_caltech/',
         img_dir='images/test',
         ann_dir='labels/test',
         pipeline=test_pipeline),
     test=dict(
-        type='WMHDatasetBCG',
-        data_root=f'{data_root}/nuhs_bcg/',
+        type='BrainDataset',
+        data_root=f'{data_root}/abide_caltech/',
         img_dir='images/test',
         ann_dir='labels/test',
         pipeline=test_pipeline))

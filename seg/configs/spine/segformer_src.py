@@ -4,11 +4,13 @@
 # Licensed under the Apache License, Version 2.0
 # ---------------------------------------------------------------
 
-datatag = ""
-# datatag = "_euler"
 # dataset = "spine_dataset7"
-dataset = "spine_mrss-dataset7"
-num_classes = 11
+
+# datatag = ""
+datatag = "_euler"
+dataset = "spine_mri"
+dataset = "spine_ct"
+num_classes = 6
 
 _base_ = [
     "../_base_/default_runtime.py",
@@ -79,4 +81,4 @@ name_encoder = "ResNetV1c"
 name_decoder = "SegFormerHead"
 name_uda = "dacs"
 name_opt = "adamw_6e-05_pmTrue_poly10warm_1x2_30k"
-name = f"{dataset}{datatag}_{name_architecture}-srconly"
+name = f"{dataset}{datatag}_{name_architecture}-srconly-rcs"

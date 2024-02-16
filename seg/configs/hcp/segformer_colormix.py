@@ -5,7 +5,7 @@
 # ---------------------------------------------------------------
 
 datatag = ""
-datatag = "_euler"
+datatag = "_euler_v2"
 dataset = 'brain_hcp1-hcp2'
 num_classes=15
 
@@ -23,9 +23,9 @@ _base_ = [
     "../_base_/schedules/poly10warm.py",
 ]
 
-burnin = -1
+burnin = 0
 uda = dict(color_mix=dict(freq=1.0, suppress_bg=True, burnin=burnin, 
-                          coloraug=True, gradversion='v1', 
+                          coloraug=True, gradversion='no', 
                           burninthresh=1.0))
 
 norm_net = dict(norm_activation="linear", layers=[1, 1])

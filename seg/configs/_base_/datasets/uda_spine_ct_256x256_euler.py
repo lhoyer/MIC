@@ -4,10 +4,10 @@
 # Licensed under the Apache License, Version 2.0
 # ---------------------------------------------------------------
 
-data_root = '/cluster/work/cvl/klanna/brain/'
+data_root = '/cluster/work/cvl/klanna/lumbarspine/'
 
 # dataset settings
-dataset_type = 'BrainDataset'
+dataset_type = 'SpineCTDataset'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 crop_size = (256, 256)
@@ -20,6 +20,7 @@ source_train_pipeline = [
     dict(type='ElasticTransformation', data_aug_ratio=0.25),  
     dict(type='StructuralAug', data_aug_ratio=0.25),
     dict(type='RandomFlip', prob=0.0),
+    dict(type='PhotoMetricDistortion'),  # is applied later in dacs.py
     dict(type='Normalize', **img_norm_cfg),
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_semantic_seg']),
@@ -28,7 +29,7 @@ target_train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations'),
     dict(type='Resize', img_scale=img_scale),
-    dict(type='ElasticTransformation', data_aug_ratio=0.25),  
+    dict(type='ElasticTransformation', data_aug_ratio=0.25),
     dict(type='StructuralAug', data_aug_ratio=0.25),
     dict(type='RandomFlip', prob=0.0),
     dict(type='Normalize', **img_norm_cfg),
@@ -56,26 +57,26 @@ data = dict(
     train=dict(
         type='UDADataset',
         source=dict(
-            type='WMHDatasetBCG',
-            data_root=f'{data_root}/umc_bcg/',
+            type='SpineCTDataset',
+            data_root=f'{data_root}/VerSe/',
             img_dir='images/train',
             ann_dir='labels/train',
             pipeline=source_train_pipeline),
         target=dict(
-            type='WMHDatasetBCG',
-            data_root=f'{data_root}/nuhs_bcg/',
+            type='SpineCTDataset',
+            data_root=f'{data_root}/VerSe/',
             img_dir='images/train',
             ann_dir='labels/train',
             pipeline=target_train_pipeline)),
     val=dict(
-        type='WMHDatasetBCG',
-        data_root=f'{data_root}/nuhs_bcg/',
+        type='SpineCTDataset',
+        data_root=f'{data_root}/VerSe/',
         img_dir='images/test',
         ann_dir='labels/test',
         pipeline=test_pipeline),
     test=dict(
-        type='WMHDatasetBCG',
-        data_root=f'{data_root}/nuhs_bcg/',
+        type='SpineCTDataset',
+        data_root=f'{data_root}/VerSe/',
         img_dir='images/test',
         ann_dir='labels/test',
         pipeline=test_pipeline))
