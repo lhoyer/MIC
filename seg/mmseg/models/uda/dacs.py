@@ -386,13 +386,13 @@ class DACS(UDADecorator):
             img = img_original
 
         if self.local_iter % 200 == 0:
-            # for i in range(self.contrast_flip.n_classes):
-            #     wandb.log({f"Class_{i+1} src": self.contrast_flip.source_mean[i, 0].item()}, step=self.local_iter+1)
-            #     wandb.log({f"Class_{i+1} tgt": self.contrast_flip.target_mean[i, 0].item()}, step=self.local_iter+1)
+            for i in range(self.contrast_flip.n_classes):
+                wandb.log({f"Class_{i+1} src": self.contrast_flip.source_mean[i, 0].item()}, step=self.local_iter+1)
+                wandb.log({f"Class_{i+1} tgt": self.contrast_flip.target_mean[i, 0].item()}, step=self.local_iter+1)
 
-            # for name, param in self.contrast_flip.normalization_net.named_parameters():
-            # wandb.log({name: param.data.item()}, step=self.local_iter+1)
-            # wandb.log({'loss': loss_val}, step=self.local_iter+1)
+            for name, param in norm_net.named_parameters():
+                wandb.log({name: param.data.item()}, step=self.local_iter+1)
+
             wandb.log({"loss": norm_loss.item()}, step=self.local_iter + 1)
             wandb.log({"color_mix_flag": int(self.color_mix_flag)}, step=self.local_iter + 1)
 
@@ -422,15 +422,18 @@ class DACS(UDADecorator):
                     )
                 }
             )     
-               
-        return color_jitter_med(
-                color_jitter=random.uniform(0, 1),
-                s=self.color_mix['color_jitter_s'],
-                p=self.color_mix['color_jitter_p'],
-                mean=means,
-                std=stds,
-                data=img.clone(),
-            )[0]
+
+        if self.color_mix['coloraug']:
+            return color_jitter_med(
+                    color_jitter=random.uniform(0, 1),
+                    s=self.color_mix['color_jitter_s'],
+                    p=self.color_mix['color_jitter_p'],
+                    mean=means,
+                    std=stds,
+                    data=img.clone(),
+                )[0]
+        else:
+            return img
     
     def forward_train(
         self,
