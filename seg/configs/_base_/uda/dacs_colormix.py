@@ -14,12 +14,12 @@ uda = dict(
         "freq": 1.0,
         "suppress_bg": True,
         "norm_type": "linear",
-        "burnin": 0,
+        "burnin": -1,
         "burninthresh": 1.0,
-        "coloraug": False,
+        "coloraug": True,
         "color_jitter_s": 0.1,
         "color_jitter_p": 0.25,
-        "gradversion": 'v1'
+        "gradversion": 'v2'
     },
     pseudo_weight_ignore_top=0,
     pseudo_weight_ignore_bottom=0,

@@ -35,8 +35,8 @@ _base_ = [
 
 burnin = -1
 uda = dict(color_mix=dict(freq=1.0, suppress_bg=True, burnin=burnin, 
-                          coloraug=True, gradversion='v1', 
-                          burninthresh=1.0, color_jitter_s=0.1))
+                          coloraug=True, gradversion='no', 
+                          burninthresh=1.0))
 
 norm_net = dict(norm_activation="linear", layers=[1, 1])
 # norm_net = dict(norm_activation="relu", layers=[1, 32, 1])
@@ -78,7 +78,7 @@ n_gpus = 1
 runner = dict(type="IterBasedRunner", max_iters=30000)
 # Logging Configuration
 checkpoint_config = dict(by_epoch=False, interval=1000, max_keep_ckpts=1)
-evaluation = dict(interval=1000, metric="mDice")
+evaluation = dict(interval=200, metric="mDice")
 # Meta Information for Result Analysis
 
 exp = "basic"
