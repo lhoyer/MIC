@@ -4,6 +4,7 @@
 #SBATCH  --error=./LOGS/%j.out
 #SBATCH  --gpus=1
 #SBATCH  --mem-per-cpu=5G
+##SBATCH  --mem-per-cpu=10G
 #SBATCH  --ntasks=1
 #SBATCH  --cpus-per-task=2
 #SBATCH  --time=1-0

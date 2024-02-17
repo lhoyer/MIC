@@ -20,7 +20,6 @@ source_train_pipeline = [
     dict(type='ElasticTransformation', data_aug_ratio=0.25),  
     dict(type='StructuralAug', data_aug_ratio=0.25),
     dict(type='RandomFlip', prob=0.0),
-    # dict(type='PhotoMetricDistortion'),  # is applied later in dacs.py
     dict(type='Normalize', **img_norm_cfg),
     # dict(type='Pad', size=crop_size, pad_val=0, seg_pad_val=0),
     dict(type='DefaultFormatBundle'),
@@ -31,7 +30,6 @@ target_train_pipeline = [
     dict(type='LoadAnnotations'),
     dict(type='Resize', img_scale=img_scale),
     dict(type='RandomFlip', prob=0.0),
-    # dict(type='PhotoMetricDistortion'),  # is applied later in dacs.py
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size=crop_size, pad_val=0, seg_pad_val=0),
     dict(type='DefaultFormatBundle'),

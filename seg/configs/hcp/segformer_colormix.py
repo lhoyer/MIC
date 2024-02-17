@@ -65,7 +65,7 @@ optimizer = dict(
 )
 
 n_gpus = 1
-runner = dict(type="IterBasedRunner", max_iters=20000)
+runner = dict(type="IterBasedRunner", max_iters=40000)
 # Logging Configuration
 checkpoint_config = dict(by_epoch=False, interval=5000, max_keep_ckpts=1)
 evaluation = dict(interval=1000, metric="mDice")

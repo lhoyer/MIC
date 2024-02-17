@@ -5,8 +5,9 @@
 # ---------------------------------------------------------------
 
 datatag = ""
-# datatag = "_euler"
-dataset = "spine_mrss-dataset7"
+datatag = "_euler"
+dataset = "spine_ct-mri"
+# dataset = "spine_mri-ct"
 num_classes = 6
 
 _base_ = [
@@ -23,9 +24,9 @@ _base_ = [
     "../_base_/schedules/poly10warm.py",
 ]
 
-burnin = -1
-uda = dict(color_mix=dict(freq=1.0, suppress_bg=True, burnin=burnin, 
-                          coloraug=False, gradversion='v1'))
+burnin = 0
+uda = dict(color_mix=dict(freq=0.5, suppress_bg=True, burnin=burnin, 
+                          coloraug=True, gradversion='no'))
 
 norm_net = dict(norm_activation="linear", layers=[1, 1])
 # norm_net = dict(norm_activation="relu", layers=[1, 32, 1])
@@ -53,7 +54,7 @@ data = dict(
 # Optimizer Hyperparameters
 optimizer_config = None
 optimizer = dict(
-    lr=6e-05,
+    lr=6e-04,
     paramwise_cfg=dict(
         custom_keys=dict(
             head=dict(lr_mult=10.0),
@@ -79,6 +80,4 @@ name_decoder = "SegFormerHead"
 name_uda = "dacs"
 name_opt = "adamw_6e-05_pmTrue_poly10warm_1x2_30k"
 
-num_norm_layers = len(norm_net["layers"])-2
-norm = f"{norm_net['norm_activation']}{num_norm_layers}"
-name = f"{dataset}{datatag}_{name_architecture}_{norm}-burnin{burnin}-flag"
+name = f"{dataset}{datatag}_{name_architecture}-burnin{burnin}"

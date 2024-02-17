@@ -373,8 +373,7 @@ class DACS(UDADecorator):
             (self.local_iter >= self.color_mix["burnin"])
             and (self.color_mix["burnin"] != -1)
         ) or ((self.color_mix["burnin"] == -1) and self.color_mix_flag):
-            img = img_polished.detach()
-            del img_polished
+            img = img_polished.detach().clone()            
 
             if self.color_mix["suppress_bg"]:
                 img[background_mask] = img_segm_hist[background_mask]
@@ -384,6 +383,8 @@ class DACS(UDADecorator):
             img = img_segm_hist.repeat(1, 3, 1, 1)
         else:
             img = img_original
+
+        del img_polished
 
         if self.local_iter % 200 == 0:
             for i in range(self.contrast_flip.n_classes):

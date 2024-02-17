@@ -4,9 +4,10 @@
 # Licensed under the Apache License, Version 2.0
 # ---------------------------------------------------------------
 
-datatag = ""
-# datatag = "_euler"
-dataset = "spine_mrss-dataset7"
+# datatag = ""
+datatag = "_euler"
+dataset = "spine_ct-mri"
+# dataset = "spine_mri-ct"
 num_classes = 6
 
 _base_ = [
@@ -55,7 +56,7 @@ data = dict(
 # Optimizer Hyperparameters
 optimizer_config = None
 optimizer = dict(
-    lr=6e-05,
+    lr=6e-04,
     paramwise_cfg=dict(
         custom_keys=dict(
             head=dict(lr_mult=10.0),
@@ -78,4 +79,4 @@ name_encoder = "ResNetV1c"
 name_decoder = "SegFormerHead"
 name_uda = "dacs"
 name_opt = "adamw_6e-05_pmTrue_poly10warm_1x2_30k"
-name = f"{dataset}{datatag}_{name_architecture}-debug"
+name = f"{dataset}{datatag}_{name_architecture}"
