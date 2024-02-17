@@ -24,7 +24,7 @@ _base_ = [
 ]
 
 burnin = 0
-uda = dict(color_mix=dict(freq=1.0, suppress_bg=True, burnin=burnin, 
+uda = dict(color_mix=dict(freq=0.5, suppress_bg=True, burnin=burnin, 
                           coloraug=True, gradversion='no', 
                           burninthresh=1.0))
 

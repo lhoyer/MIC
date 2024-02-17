@@ -49,7 +49,9 @@ class ClasswiseMultAugmenter:
         for i in range(self.n_classes):
             for c in range(3):
                 old_min = data_[:, c, :, :][mask.squeeze(1) != 0].min()
+                
                 data_[:, c, :, :][mask.squeeze(1) == i] += self.coef[i, 0]
+
                 new_min = data_[:, c, :, :][mask.squeeze(1) != 0].min()
 
                 data_[:, c, :, :][mask.squeeze(1) != 0] += old_min - new_min

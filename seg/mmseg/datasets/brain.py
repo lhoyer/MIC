@@ -359,7 +359,7 @@ class BrainDataset(CustomDataset):
 
 @DATASETS.register_module()
 class WMHDataset(BrainDataset):
-    CLASSES = ("1", "2")
+    CLASSES = ("B", "Lesion")
 
     PALETTE = [[153, 153, 153], [128, 64, 128]]
 
@@ -384,7 +384,7 @@ class WMHDataset(BrainDataset):
 
 @DATASETS.register_module()
 class WMHDatasetBCG(BrainDataset):
-    CLASSES = ("1", "2", "3")
+    CLASSES = ("B", "Brain", "Lesion")
 
     PALETTE = [[0, 0, 0], [153, 153, 153], [128, 64, 128]]
 
@@ -431,7 +431,7 @@ class SpineMRIDataset(BrainDataset):
             img_suffix=".png",
             seg_map_suffix="_labelTrainIds.png",
             split=None,
-            ignore_index=0,
+            ignore_index=255,
             **kwargs,
         )
 
@@ -452,7 +452,7 @@ class SpineCTDataset(BrainDataset):
         [190, 153, 153],
     ]
 
-    VOLUME_SIZE = 100
+    VOLUME_SIZE = 120
     metric_version = "new"
 
     def __init__(self, **kwargs):
@@ -463,9 +463,9 @@ class SpineCTDataset(BrainDataset):
             img_suffix=".png",
             seg_map_suffix="_labelTrainIds.png",
             split=None,
-            ignore_index=0,
+            ignore_index=255,
             **kwargs,
         )
 
         self.foreground_idx_start = 1
-        self.volume_meta = self.read_volume_meta()  
+        self.volume_meta = self.read_volume_meta()
