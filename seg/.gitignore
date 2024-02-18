@@ -29,7 +29,7 @@ MANIFEST
 examples/
 wandb/
 LOGS/
-LOGS_TEST//
+LOGS_TEST/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
