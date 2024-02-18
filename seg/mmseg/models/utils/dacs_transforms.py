@@ -54,13 +54,13 @@ class ClasswiseMultAugmenter:
 
                 new_min = data_[:, c, :, :][mask.squeeze(1) != 0].min()
 
-                data_[:, c, :, :][mask.squeeze(1) != 0] += old_min - new_min
+                # data_[:, c, :, :][mask.squeeze(1) != 0] += old_min - new_min
             
-        min_val = data_.min()
-        data_ -= min_val
-        max_val = data_.max()
-        if max_val != 0:
-            data_ /= max_val
+        # min_val = data_.min()
+        # data_ -= min_val
+        # max_val = data_.max()
+        # if max_val != 0:
+        #     data_ /= max_val
 
         renorm_(data_, mean, std)
 

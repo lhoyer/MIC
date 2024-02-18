@@ -8,8 +8,8 @@
 
 # datatag = ""
 datatag = "_euler"
-# dataset = "spine_mri"
-dataset = "spine_ct"
+dataset = "spine_mri"
+# dataset = "spine_ct"
 # dataset = "spine_ct-mri"
 # dataset = "spine_mri-ct"
 num_classes = 6
@@ -73,7 +73,7 @@ n_gpus = 1
 runner = dict(type="IterBasedRunner", max_iters=30000)
 # Logging Configuration
 checkpoint_config = dict(by_epoch=False, interval=1000, max_keep_ckpts=1)
-evaluation = dict(interval=100, metric="mDice")
+evaluation = dict(interval=1000, metric="mDice")
 
 # Meta Information for Result Analysis
 exp = "basic"

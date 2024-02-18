@@ -24,11 +24,9 @@ _base_ = [
     "../_base_/schedules/poly10warm.py",
 ]
 
-burnin_global = 0
 burnin = 0
-uda = dict(color_mix=dict(freq=1.0, burnin_global=burnin_global, 
-                          suppress_bg=True, burnin=burnin, 
-                          coloraug=True, gaussian_blur=False))
+uda = dict(color_mix=dict(freq=0.5, suppress_bg=True, burnin=burnin, 
+                          coloraug=True, gradversion='no'))
 
 norm_net = dict(norm_activation="linear", layers=[1, 1])
 # norm_net = dict(norm_activation="relu", layers=[1, 32, 1])
@@ -81,5 +79,5 @@ name_encoder = "ResNetV1c"
 name_decoder = "SegFormerHead"
 name_uda = "dacs"
 name_opt = "adamw_6e-05_pmTrue_poly10warm_1x2_30k"
-blur = '-blur' if uda["color_mix"]["gaussian_blur"] else ""
-name = f"{dataset}{datatag}_{name_architecture}-burnin{burnin}-g{burnin_global}{blur}"
+
+name = f"{dataset}{datatag}_{name_architecture}-burnin{burnin}"

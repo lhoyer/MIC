@@ -11,15 +11,17 @@ uda = dict(
     alpha=0.999,
     color_mix={
         "type": "source",
+        "burnin_global": 0,
         "freq": 1.0,
         "suppress_bg": True,
         "norm_type": "linear",
         "burnin": -1,
         "burninthresh": 1.0,
-        "coloraug": True,
+        "coloraug": True,        
         "color_jitter_s": 0.1,
         "color_jitter_p": 0.25,
-        "gradversion": 'no'
+        "gaussian_blur": False,
+        "blur": 0.1
     },
     pseudo_weight_ignore_top=0,
     pseudo_weight_ignore_bottom=0,

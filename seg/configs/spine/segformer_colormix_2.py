@@ -24,10 +24,8 @@ _base_ = [
     "../_base_/schedules/poly10warm.py",
 ]
 
-burnin_global = 0
-burnin = 0
-uda = dict(color_mix=dict(freq=1.0, burnin_global=burnin_global, 
-                          suppress_bg=True, burnin=burnin, 
+burnin = -1
+uda = dict(color_mix=dict(freq=1.0, suppress_bg=True, burnin=burnin, 
                           coloraug=True, gaussian_blur=False))
 
 norm_net = dict(norm_activation="linear", layers=[1, 1])
@@ -73,7 +71,6 @@ checkpoint_config = dict(by_epoch=False, interval=1000, max_keep_ckpts=1)
 evaluation = dict(interval=1000, metric="mDice")
 # Meta Information for Result Analysis
 
-
 exp = "basic"
 name_dataset = f"{dataset}{datatag}"
 name_architecture = "segformer_r101"
@@ -82,4 +79,4 @@ name_decoder = "SegFormerHead"
 name_uda = "dacs"
 name_opt = "adamw_6e-05_pmTrue_poly10warm_1x2_30k"
 blur = '-blur' if uda["color_mix"]["gaussian_blur"] else ""
-name = f"{dataset}{datatag}_{name_architecture}-burnin{burnin}-g{burnin_global}{blur}"
+name = f"{dataset}{datatag}_{name_architecture}-burnin{burnin}{blur}"

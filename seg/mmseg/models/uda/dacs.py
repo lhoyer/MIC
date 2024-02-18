@@ -425,7 +425,7 @@ class DACS(UDADecorator):
             )     
 
         if self.color_mix['coloraug']:
-            return color_jitter_med(
+            img = color_jitter_med(
                     color_jitter=random.uniform(0, 1),
                     s=self.color_mix['color_jitter_s'],
                     p=self.color_mix['color_jitter_p'],
@@ -433,8 +433,11 @@ class DACS(UDADecorator):
                     std=stds,
                     data=img.clone(),
                 )[0]
-        else:
-            return img
+            
+        if self.color_mix['gaussian_blur']:
+            img = gaussian_blur(blur=random.uniform(0, 1), data=img.clone())[0]
+
+        return img
     
     def forward_train(
         self,
@@ -493,16 +496,11 @@ class DACS(UDADecorator):
         }
 
         img_original = img.clone()
-        if self.color_mix["type"] == "source":
-            if np.random.rand() < self.color_mix["freq"]:
+        if self.color_mix["type"] == "source":            
+            if (np.random.rand() < self.color_mix["freq"]) and (self.local_iter >= self.color_mix["burnin_global"]):
                 img = self.intensity_normalization(
-                    img_original, gt_semantic_seg, means, stds
+                    img, gt_semantic_seg, means, stds
                 )
-
-        if self.color_mix['gradversion'] == 'v2':
-            for name, m in self.get_model().named_modules():
-                if "normalization_net" in name:
-                    m.training = False
 
         # Train on source images
         clean_losses = self.get_model().forward_train(
@@ -561,7 +559,7 @@ class DACS(UDADecorator):
 
             mix_masks = get_class_masks(gt_semantic_seg)
 
-            if self.color_mix["type"] != "none":
+            if (self.color_mix["type"] != "none") and (self.local_iter >= self.color_mix["burnin_global"]):
                 self.contrast_flip.update(
                     img_original,
                     target_img,
@@ -571,19 +569,13 @@ class DACS(UDADecorator):
                     strong_parameters,
                 )
 
-            if self.color_mix["type"] == "mix":
-                img_color = self.contrast_flip.color_mix(
-                    img, gt_semantic_seg, strong_parameters
-                )
-            else:
-                img_color = img
 
             if self.mix == "class":
                 for i in range(batch_size):
                     strong_parameters["mix"] = mix_masks[i]
                     mixed_img[i], mixed_lbl[i] = strong_transform(
                         strong_parameters,
-                        data=torch.stack((img_color[i], target_img[i])),
+                        data=torch.stack((img[i], target_img[i])),
                         target=torch.stack((gt_semantic_seg[i][0], pseudo_label[i])),
                     )
                     _, mixed_seg_weight[i] = strong_transform(
@@ -609,11 +601,6 @@ class DACS(UDADecorator):
                 del gt_pixel_weight
                 mixed_img = torch.cat(mixed_img)
                 mixed_lbl = torch.cat(mixed_lbl)
-
-            if self.color_mix['gradversion'] == 'v1':
-                for name, m in self.get_model().named_modules():
-                    if "normalization_net" in name:
-                        m.training = False
                 
             mix_losses = self.get_model().forward_train(
                 mixed_img,
@@ -672,7 +659,7 @@ class DACS(UDADecorator):
         if (
             self.local_iter % self.debug_img_interval == 0
             and not self.source_only
-            and (self.local_iter > self.burnin)
+            and (self.local_iter >= self.burnin)
         ):
             out_dir = os.path.join(self.train_cfg["work_dir"], "debug")
             os.makedirs(out_dir, exist_ok=True)

@@ -43,7 +43,7 @@ uda = dict(
 class_temp = 0.1
 per_image = False
 data = dict(
-    samples_per_gpu=4,
+    samples_per_gpu=8,
     workers_per_gpu=2,
     train=dict(
         # Rare Class Sampling
@@ -69,7 +69,7 @@ n_gpus = 1
 runner = dict(type="IterBasedRunner", max_iters=30000)
 # Logging Configuration
 checkpoint_config = dict(by_epoch=False, interval=1000, max_keep_ckpts=1)
-evaluation = dict(interval=100, metric="mDice")
+evaluation = dict(interval=1000, metric="mDice")
 
 # Meta Information for Result Analysis
 exp = "basic"

@@ -24,11 +24,11 @@ _base_ = [
     "../_base_/schedules/poly10warm.py",
 ]
 
-burnin_global = 0
+burnin_global = 100
 burnin = 0
 uda = dict(color_mix=dict(freq=1.0, burnin_global=burnin_global, 
                           suppress_bg=True, burnin=burnin, 
-                          coloraug=True, gaussian_blur=False))
+                          coloraug=True, gaussian_blur=True))
 
 norm_net = dict(norm_activation="linear", layers=[1, 1])
 # norm_net = dict(norm_activation="relu", layers=[1, 32, 1])
