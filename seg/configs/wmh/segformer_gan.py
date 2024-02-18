@@ -4,11 +4,14 @@
 # Licensed under the Apache License, Version 2.0
 # ---------------------------------------------------------------
 
+# WMH datasets
 # datatag = ""
-datatag = "_euler"
-dataset = "spine_ct-mri"
-# dataset = "spine_mri-ct"
-num_classes = 6
+# datatag = "_v2_euler"
+datatag = "_noph_v2_euler"
+# datatag = "_euler"
+# dataset = "wmh_nuhs-umc"
+dataset = "wmh_umc-gan-nuhs"
+num_classes = 2
 
 _base_ = [
     "../_base_/default_runtime.py",
@@ -47,7 +50,6 @@ data = dict(
     workers_per_gpu=2,
     train=dict(
         # Rare Class Sampling
-        # rare_class_sampling=None
         rare_class_sampling=dict(
             min_pixels=4, class_temp=class_temp, min_crop_ratio=0.5, per_image=per_image
         )
@@ -56,6 +58,7 @@ data = dict(
 # Optimizer Hyperparameters
 optimizer_config = None
 optimizer = dict(
+    # lr=6e-05,
     lr=6e-04,
     paramwise_cfg=dict(
         custom_keys=dict(

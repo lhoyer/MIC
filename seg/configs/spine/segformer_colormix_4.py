@@ -47,10 +47,10 @@ data = dict(
     workers_per_gpu=2,
     train=dict(
         # Rare Class Sampling
-        rare_class_sampling=None
-        # rare_class_sampling=dict(
-        #     min_pixels=4, class_temp=class_temp, min_crop_ratio=0.5, per_image=per_image
-        # )
+        # rare_class_sampling=None
+        rare_class_sampling=dict(
+            min_pixels=4, class_temp=class_temp, min_crop_ratio=0.5, per_image=per_image
+        )
     ),
 )
 # Optimizer Hyperparameters
