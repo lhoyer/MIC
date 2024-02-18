@@ -31,7 +31,7 @@ _base_ = [
     "../_base_/schedules/poly10warm.py",
 ]
 
-burnin_global = 100
+burnin_global = 1000
 burnin = 0
 uda = dict(color_mix=dict(freq=1.0, burnin_global=burnin_global, 
                           suppress_bg=True, burnin=burnin, 
