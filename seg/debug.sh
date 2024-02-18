@@ -6,9 +6,6 @@
 # source /itet-stor/klanna/net_scratch/conda/etc/profile.d/conda.sh
 # conda activate mic
 
-# source /scratch_net/tinto/klanna/conda/etc/profile.d/conda.sh
-# conda activate pytcu11-gpu
-
 WANDB_MODE=disabled
 WORKPATH=/usr/bmicnas02/data-biwi-01/klanna_data/results/MIC/
 
@@ -33,6 +30,8 @@ WORKPATH=/usr/bmicnas02/data-biwi-01/klanna_data/results/MIC/
 
 # python run_experiments.py --config configs/brain/segformer_colormix_source.py
 
-python run_experiments.py --config configs/wmh/segformer_colormix.py
+# python run_experiments.py --config configs/wmh/segformer_colormix.py
 
 # python run_experiments.py --config configs/spine/segformer_src.py
+
+python run_experiments.py --config configs/hcp/segformer_fda.py

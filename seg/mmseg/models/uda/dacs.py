@@ -51,8 +51,8 @@ from mmseg.models.utils.wandb_log_images import WandbLogImages
 
 from torch import nn
 import wandb
-from torchvision.utils import make_grid
-from PIL import Image
+
+from mmseg.models.utils.fda import FDA_source_to_target
 
 
 def _params_equal(ema_model, model):
@@ -101,7 +101,11 @@ class DACS(UDADecorator):
             cfg["enable_contrastive"] if "enable_contrastive" in cfg else False
         )
         self.burnin = cfg["burnin"] if "burnin" in cfg else 0
-        self.color_mix = cfg["color_mix"] if "color_mix" in cfg else dict(type="none", gradversion="none")
+        self.color_mix = (
+            cfg["color_mix"]
+            if "color_mix" in cfg
+            else dict(type="none", gradversion="none")
+        )
 
         # assert self.mix == 'class'
         if self.mix != "class":
@@ -124,10 +128,10 @@ class DACS(UDADecorator):
 
         if self.enable_contrastive:
             self.contrastive = ContrastiveModule(cfg["contrastive_loss"])
-        
+
         num_classes = self.get_model().decode_head.num_classes
-        
-        if self.color_mix["type"] != "none":
+
+        if self.color_mix["type"] == "source":
             num_classes = self.get_model().decode_head.num_classes
 
             self.contrast_flip = ClasswiseMultAugmenter(
@@ -137,7 +141,7 @@ class DACS(UDADecorator):
             )
             self.criterion = nn.MSELoss()
             self.color_mix_flag = False
-            
+
     def get_ema_model(self):
         return get_module(self.ema_model)
 
@@ -373,7 +377,7 @@ class DACS(UDADecorator):
             (self.local_iter >= self.color_mix["burnin"])
             and (self.color_mix["burnin"] != -1)
         ) or ((self.color_mix["burnin"] == -1) and self.color_mix_flag):
-            img = img_polished.detach().clone()            
+            img = img_polished.detach().clone()
 
             if self.color_mix["suppress_bg"]:
                 img[background_mask] = img_segm_hist[background_mask]
@@ -388,14 +392,22 @@ class DACS(UDADecorator):
 
         if self.local_iter % 200 == 0:
             for i in range(self.contrast_flip.n_classes):
-                wandb.log({f"Class_{i+1} src": self.contrast_flip.source_mean[i, 0].item()}, step=self.local_iter+1)
-                wandb.log({f"Class_{i+1} tgt": self.contrast_flip.target_mean[i, 0].item()}, step=self.local_iter+1)
+                wandb.log(
+                    {f"Class_{i+1} src": self.contrast_flip.source_mean[i, 0].item()},
+                    step=self.local_iter + 1,
+                )
+                wandb.log(
+                    {f"Class_{i+1} tgt": self.contrast_flip.target_mean[i, 0].item()},
+                    step=self.local_iter + 1,
+                )
 
             for name, param in norm_net.named_parameters():
-                wandb.log({name: param.data.item()}, step=self.local_iter+1)
+                wandb.log({name: param.data.item()}, step=self.local_iter + 1)
 
             wandb.log({"loss": norm_loss.item()}, step=self.local_iter + 1)
-            wandb.log({"color_mix_flag": int(self.color_mix_flag)}, step=self.local_iter + 1)
+            wandb.log(
+                {"color_mix_flag": int(self.color_mix_flag)}, step=self.local_iter + 1
+            )
 
             vis_img = (
                 torch.clamp(denorm(img_original, means, stds), 0, 1)
@@ -422,23 +434,66 @@ class DACS(UDADecorator):
                         np.concatenate([vis_img, vis_trg_img, vis_mixed_img], axis=1)
                     )
                 }
-            )     
+            )
 
-        if self.color_mix['coloraug']:
+        if self.color_mix["coloraug"]:
             img = color_jitter_med(
-                    color_jitter=random.uniform(0, 1),
-                    s=self.color_mix['color_jitter_s'],
-                    p=self.color_mix['color_jitter_p'],
-                    mean=means,
-                    std=stds,
-                    data=img.clone(),
-                )[0]
-            
-        if self.color_mix['gaussian_blur']:
+                color_jitter=random.uniform(0, 1),
+                s=self.color_mix["color_jitter_s"],
+                p=self.color_mix["color_jitter_p"],
+                mean=means,
+                std=stds,
+                data=img.clone(),
+            )[0]
+
+        if self.color_mix["gaussian_blur"]:
             img = gaussian_blur(blur=random.uniform(0, 1), data=img.clone())[0]
 
         return img
-    
+
+    def fda_normalization(self, img_original, target_img, means, stds):
+        # estimate tgt intensities using GT segmenation masks
+
+        img = FDA_source_to_target(img_original, target_img, L=self.color_mix["L"])
+
+        if self.local_iter % 200 == 0:
+
+            vis_img = (
+                torch.clamp(denorm(img_original, means, stds), 0, 1)
+                .cpu()
+                .permute(0, 2, 3, 1)[0]
+                .numpy()
+            )
+            vis_mixed_img = (
+                torch.clamp(denorm(img, means, stds), 0, 1)
+                .cpu()
+                .permute(0, 2, 3, 1)[0]
+                .numpy()
+            )
+
+            wandb.log(
+                {
+                    "Augmentation": wandb.Image(
+                        np.concatenate([vis_img, vis_mixed_img], axis=1)
+                    )
+                }
+            )
+
+        if self.color_mix["coloraug"]:
+            img = color_jitter_med(
+                color_jitter=random.uniform(0, 1),
+                s=self.color_mix["color_jitter_s"],
+                p=self.color_mix["color_jitter_p"],
+                mean=means,
+                std=stds,
+                data=img.clone(),
+            )[0]
+
+        if self.color_mix["gaussian_blur"]:
+            img = gaussian_blur(blur=random.uniform(0, 1), data=img.clone())[0]
+
+        return img
+
     def forward_train(
         self,
         img,
@@ -496,11 +551,13 @@ class DACS(UDADecorator):
         }
 
         img_original = img.clone()
-        if self.color_mix["type"] == "source":            
-            if (np.random.rand() < self.color_mix["freq"]) and (self.local_iter >= self.color_mix["burnin_global"]):
-                img = self.intensity_normalization(
-                    img, gt_semantic_seg, means, stds
-                )
+        if self.color_mix["type"] == "source":
+            if (np.random.rand() <= self.color_mix["freq"]) and (
+                self.local_iter >= self.color_mix["burnin_global"]
+            ):
+                img = self.intensity_normalization(img, gt_semantic_seg, means, stds)
+        elif self.color_mix["type"] == "fda":
+            img = self.fda_normalization(img, target_img, means, stds)
 
         # Train on source images
         clean_losses = self.get_model().forward_train(
@@ -559,7 +616,9 @@ class DACS(UDADecorator):
 
             mix_masks = get_class_masks(gt_semantic_seg)
 
-            if (self.color_mix["type"] != "none") and (self.local_iter >= self.color_mix["burnin_global"]):
+            if (self.color_mix["type"] == "source") and (
+                self.local_iter >= self.color_mix["burnin_global"]
+            ):
                 self.contrast_flip.update(
                     img_original,
                     target_img,
@@ -568,7 +627,6 @@ class DACS(UDADecorator):
                     pseudo_weight,
                     strong_parameters,
                 )
-
 
             if self.mix == "class":
                 for i in range(batch_size):
@@ -601,7 +659,7 @@ class DACS(UDADecorator):
                 del gt_pixel_weight
                 mixed_img = torch.cat(mixed_img)
                 mixed_lbl = torch.cat(mixed_lbl)
-                
+
             mix_losses = self.get_model().forward_train(
                 mixed_img,
                 img_metas,
