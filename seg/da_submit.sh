@@ -1,7 +1,9 @@
 #!/bin/bash
 
-#SBATCH  --output=/usr/bmicnas02/data-biwi-01/klanna_data/results/MIC/LOGS/%j.out
-#SBATCH  --error=/usr/bmicnas02/data-biwi-01/klanna_data/results/MIC/LOGS/%j.out
+#SBATCH  --output=./LOGS/%j.out
+#SBATCH  --error=./LOGS/%j.out
+##SBATCH  --output=/usr/bmicnas02/data-biwi-01/klanna_data/results/MIC/LOGS/%j.out
+##SBATCH  --error=/usr/bmicnas02/data-biwi-01/klanna_data/results/MIC/LOGS/%j.out
 #SBATCH  --gres=gpu:1
 #SBATCH  --mem=80G
 ##SBATCH --account=bmic

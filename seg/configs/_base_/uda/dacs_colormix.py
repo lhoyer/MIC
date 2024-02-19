@@ -21,7 +21,8 @@ uda = dict(
         "color_jitter_s": 0.1,
         "color_jitter_p": 0.25,
         "gaussian_blur": False,
-        "blur": 0.1
+        "blur": 0.1,
+        "auto_bcg": False
     },
     pseudo_weight_ignore_top=0,
     pseudo_weight_ignore_bottom=0,

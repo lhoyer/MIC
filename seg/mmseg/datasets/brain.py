@@ -399,7 +399,7 @@ class WMHDatasetBCG(BrainDataset):
             img_suffix=".png",
             seg_map_suffix="_labelTrainIds.png",
             split=None,
-            ignore_index=0,
+            ignore_index=255,
             **kwargs,
         )
 

@@ -136,8 +136,8 @@ class DACS(UDADecorator):
 
             self.contrast_flip = ClasswiseMultAugmenter(
                 num_classes,
-                self.color_mix["norm_type"],
                 suppress_bg=self.color_mix["suppress_bg"],
+                auto_bcg=self.color_mix["auto_bcg"]
             )
             self.criterion = nn.MSELoss()
             self.color_mix_flag = False
@@ -348,7 +348,7 @@ class DACS(UDADecorator):
     def intensity_normalization(self, img_original, gt_semantic_seg, means, stds):
         # estimate tgt intensities using GT segmenation masks
 
-        img_segm_hist = self.contrast_flip.color_mix(
+        img_segm_hist, auto_bcg = self.contrast_flip.color_mix(
             img_original, gt_semantic_seg, means, stds
         )
 
@@ -357,9 +357,12 @@ class DACS(UDADecorator):
         img_polished = norm_net(img_original[:, 0, :, :].unsqueeze(1))
 
         if self.color_mix["suppress_bg"]:
-
-            foreground_mask = gt_semantic_seg > 0
-            background_mask = gt_semantic_seg == 0
+            if auto_bcg is None:
+                foreground_mask = gt_semantic_seg > 0
+                background_mask = gt_semantic_seg == 0
+            else:
+                foreground_mask = auto_bcg > 0
+                background_mask = auto_bcg == 0
 
             norm_loss = self.criterion(
                 img_polished[foreground_mask], img_segm_hist[foreground_mask]
