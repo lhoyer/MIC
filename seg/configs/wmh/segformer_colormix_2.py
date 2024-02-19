@@ -28,14 +28,15 @@ _base_ = [
     # AdamW Optimizer
     "../_base_/schedules/adamw.py",
     # Linear Learning Rate Warmup with Subsequent Linear Decay
-    "../_base_/schedules/poly10warm_med.py",
+    "../_base_/schedules/poly10warm.py",
 ]
 
 burnin_global = 0
-burnin = -1
+burnin = 0
 uda = dict(color_mix=dict(freq=1.0, burnin_global=burnin_global, 
                           suppress_bg=True, burnin=burnin, 
-                          coloraug=True, gaussian_blur=False))
+                          coloraug=False, gaussian_blur=False,
+                          auto_bcg=True))
 
 norm_net = dict(norm_activation="linear", layers=[1, 1])
 # norm_net = dict(norm_activation="relu", layers=[1, 32, 1])

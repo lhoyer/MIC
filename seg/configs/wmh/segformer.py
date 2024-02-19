@@ -6,7 +6,7 @@
 
 # WMH datasets
 datatag = ""
-datatag = "_v2_euler"
+datatag = "_noph_v2_euler"
 # datatag = "_euler"
 # dataset = "wmh_nuhs-umc"
 dataset = "wmh_umc-nuhs"

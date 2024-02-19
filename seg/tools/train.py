@@ -190,7 +190,8 @@ def main(args):
     if ('color_mix' in dict_cfg["uda"]) and (dict_cfg["uda"]["color_mix"]["type"] == "source"):
         color_aug = '-coloraug' if dict_cfg ["uda"]["color_mix"]["coloraug"] else ""
         color_mix_flag = f'-colormix-{dict_cfg["uda"]["color_mix"]["freq"]:.2f}{color_aug}'
-        wandb_taks_name = f"{wandb_taks_name}{color_mix_flag}"
+        auto_bcg = '-autobg' if dict_cfg["uda"]["color_mix"]["auto_bcg"] else ""
+        wandb_taks_name = f"{wandb_taks_name}{color_mix_flag}{auto_bcg}"
     
     project_name = f"MIC-{name_dataset}"    
 
