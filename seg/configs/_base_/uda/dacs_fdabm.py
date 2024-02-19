@@ -11,7 +11,7 @@ uda = dict(
     alpha=0.999,
     color_mix={
         "type": "fda",
-        "L": 0.1,
+        "L": 0.09,
         "coloraug": True,        
         "color_jitter_s": 0.1,
         "color_jitter_p": 0.25,

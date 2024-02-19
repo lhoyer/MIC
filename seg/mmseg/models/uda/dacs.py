@@ -390,7 +390,7 @@ class DACS(UDADecorator):
 
         del img_polished
 
-        if self.local_iter % 200 == 0:
+        if self.local_iter % 500 == 0:
             for i in range(self.contrast_flip.n_classes):
                 wandb.log(
                     {f"Class_{i+1} src": self.contrast_flip.source_mean[i, 0].item()},

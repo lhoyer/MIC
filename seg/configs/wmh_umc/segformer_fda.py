@@ -4,11 +4,9 @@
 # Licensed under the Apache License, Version 2.0
 # ---------------------------------------------------------------
 
-datatag = ""
-datatag = "_euler"
-# dataset = "spine_ct-mri"
-dataset = "spine_mri-ct"
-num_classes = 6
+datatag = "_noph_v2_euler"
+dataset = "wmh_nuhs-umc"
+num_classes = 2
 
 _base_ = [
     "../_base_/default_runtime.py",
@@ -17,25 +15,19 @@ _base_ = [
     # GTA->Cityscapes Data Loading
     f"../_base_/datasets/uda_{dataset}_256x256{datatag}.py",
     # Basic UDA Self-Training
-    "../_base_/uda/dacs_colormix.py",
+    "../_base_/uda/dacs_fdabm.py",
     # AdamW Optimizer
     "../_base_/schedules/adamw.py",
     # Linear Learning Rate Warmup with Subsequent Linear Decay
     "../_base_/schedules/poly10warm.py",
 ]
 
-burnin_global = 100
-burnin = 0
-uda = dict(color_mix=dict(freq=1.0, burnin_global=burnin_global, 
-                          suppress_bg=True, burnin=burnin, 
-                          coloraug=True, gaussian_blur=True))
-
-norm_net = dict(norm_activation="linear", layers=[1, 1])
-# norm_net = dict(norm_activation="relu", layers=[1, 32, 1])
+uda = dict(color_mix=dict(L=0.09))
+# uda = dict(color_mix=dict(L=0.05))
+# uda = dict(color_mix=dict(L=0.01))
 
 model = dict(
-    decode_head=dict(num_classes=num_classes),
-    norm_cfg=norm_net,
+    decode_head=dict(num_classes=num_classes)
 )
 
 seed = 0
@@ -47,15 +39,15 @@ data = dict(
     workers_per_gpu=2,
     train=dict(
         # Rare Class Sampling
-        rare_class_sampling=None
-        # rare_class_sampling=dict(
-        #     min_pixels=4, class_temp=class_temp, min_crop_ratio=0.5, per_image=per_image
-        # )
+        rare_class_sampling=dict(
+            min_pixels=4, class_temp=class_temp, min_crop_ratio=0.5, per_image=per_image
+        )
     ),
 )
 # Optimizer Hyperparameters
 optimizer_config = None
 optimizer = dict(
+    # lr=6e-05,
     lr=6e-04,
     paramwise_cfg=dict(
         custom_keys=dict(
@@ -67,12 +59,11 @@ optimizer = dict(
 )
 
 n_gpus = 1
-runner = dict(type="IterBasedRunner", max_iters=10000)
+runner = dict(type="IterBasedRunner", max_iters=5000)
 # Logging Configuration
 checkpoint_config = dict(by_epoch=False, interval=1000, max_keep_ckpts=1)
-evaluation = dict(interval=200, metric="mDice")
+evaluation = dict(interval=1000, metric="mDice")
 # Meta Information for Result Analysis
-
 
 exp = "basic"
 name_dataset = f"{dataset}{datatag}"
@@ -80,6 +71,6 @@ name_architecture = "segformer_r101"
 name_encoder = "ResNetV1c"
 name_decoder = "SegFormerHead"
 name_uda = "dacs"
-name_opt = "adamw_6e-05_pmTrue_poly10warm_1x2_30k"
-blur = '-blur' if uda["color_mix"]["gaussian_blur"] else ""
-name = f"{dataset}{datatag}_{name_architecture}-burnin{burnin}-g{burnin_global}{blur}"
+name_opt = "adamw_6e-05_pmTrue_poly10warm_1x2_5k"
+fda_L = f"L{uda['color_mix']['L']:.2f}"
+name = f"{dataset}{datatag}_{name_architecture}_FDA-{fda_L}"

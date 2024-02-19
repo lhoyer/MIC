@@ -5,8 +5,8 @@
 # ---------------------------------------------------------------
 
 datatag = ""
-# datatag = "_euler_v2"
-datatag = "_v2"
+datatag = "_euler_v2"
+# datatag = "_v2"
 dataset = 'brain_hcp1-hcp2'
 num_classes=15
 
@@ -24,7 +24,10 @@ _base_ = [
     "../_base_/schedules/poly10warm.py",
 ]
 
-uda = dict(color_mix=dict(L=0.1))
+# uda = dict(color_mix=dict(L=0.05))
+uda = dict(color_mix=dict(L=0.01))
+# uda = dict(color_mix=dict(L=0.09))
+
 model = dict(
     decode_head=dict(num_classes=num_classes)
 )
