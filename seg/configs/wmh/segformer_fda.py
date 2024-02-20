@@ -22,9 +22,9 @@ _base_ = [
     "../_base_/schedules/poly10warm_med.py",
 ]
 
-# uda = dict(color_mix=dict(L=0.09))
+uda = dict(color_mix=dict(L=0.09))
 # uda = dict(color_mix=dict(L=0.05))
-uda = dict(color_mix=dict(L=0.01))
+# uda = dict(color_mix=dict(L=0.01))
 
 model = dict(
     decode_head=dict(num_classes=num_classes)
@@ -40,7 +40,8 @@ data = dict(
     train=dict(
         # Rare Class Sampling
         rare_class_sampling=dict(
-            min_pixels=4, class_temp=class_temp, min_crop_ratio=0.5, per_image=per_image
+            min_pixels=16, 
+            class_temp=class_temp, min_crop_ratio=0.5, per_image=per_image
         )
     ),
 )

@@ -50,7 +50,11 @@ data = dict(
     train=dict(
         # Rare Class Sampling
         rare_class_sampling=dict(
-            min_pixels=4, class_temp=class_temp, min_crop_ratio=0.5, per_image=per_image
+            # min_pixels=4, 
+            min_pixels=16, 
+            class_temp=class_temp, 
+            min_crop_ratio=0.5, 
+            per_image=per_image
         )
     ),
 )

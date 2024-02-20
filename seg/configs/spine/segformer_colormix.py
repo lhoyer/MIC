@@ -21,14 +21,19 @@ _base_ = [
     # AdamW Optimizer
     "../_base_/schedules/adamw.py",
     # Linear Learning Rate Warmup with Subsequent Linear Decay
-    "../_base_/schedules/poly10warm.py",
+    "../_base_/schedules/poly10warm_med.py",
 ]
 
-burnin_global = 1000
+burnin_global = 0
 burnin = 0
-uda = dict(color_mix=dict(freq=1.0, auto_bcg=True, burnin_global=burnin_global, 
-                          suppress_bg=True, burnin=burnin, 
-                          coloraug=False, gaussian_blur=False))
+uda = dict(
+    color_mix=dict(
+        burnin_global=burnin_global,
+        burnin=burnin,
+        coloraug=True,
+        auto_bcg=False,
+    )
+)
 
 norm_net = dict(norm_activation="linear", layers=[1, 1])
 # norm_net = dict(norm_activation="relu", layers=[1, 32, 1])
@@ -69,8 +74,8 @@ optimizer = dict(
 n_gpus = 1
 runner = dict(type="IterBasedRunner", max_iters=10000)
 # Logging Configuration
-checkpoint_config = dict(by_epoch=False, interval=1000, max_keep_ckpts=1)
-evaluation = dict(interval=200, metric="mDice")
+checkpoint_config = dict(by_epoch=False, interval=5000, max_keep_ckpts=1)
+evaluation = dict(interval=1000, metric="mDice")
 # Meta Information for Result Analysis
 
 

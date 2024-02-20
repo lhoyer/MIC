@@ -25,7 +25,7 @@ _base_ = [
     # AdamW Optimizer
     "../_base_/schedules/adamw.py",
     # Linear Learning Rate Warmup with Subsequent Linear Decay
-    "../_base_/schedules/poly10warm.py",
+    "../_base_/schedules/poly10warm_med.py",
 ]
 
 model = dict(decode_head=dict(num_classes=num_classes))
@@ -70,9 +70,9 @@ optimizer = dict(
     ),
 )
 n_gpus = 1
-runner = dict(type="IterBasedRunner", max_iters=30000)
+runner = dict(type="IterBasedRunner", max_iters=10000)
 # Logging Configuration
-checkpoint_config = dict(by_epoch=False, interval=1000, max_keep_ckpts=1)
+checkpoint_config = dict(by_epoch=False, interval=5000, max_keep_ckpts=1)
 evaluation = dict(interval=1000, metric="mDice")
 
 # Meta Information for Result Analysis
@@ -83,4 +83,4 @@ name_encoder = "ResNetV1c"
 name_decoder = "SegFormerHead"
 name_uda = "dacs"
 name_opt = "adamw_6e-05_pmTrue_poly10warm_1x2_30k"
-name = f"{dataset}{datatag}_{name_architecture}-srconly-rcs"
+name = f"{dataset}{datatag}_{name_architecture}-srconly"

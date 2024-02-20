@@ -8,8 +8,8 @@
 datatag = ""
 datatag = "_euler_v2"
 # datatag = "_v2"
-dataset = 'brain_hcp1-gan-hcp2'
-num_classes=15
+dataset = "brain_hcp1-gan-hcp2"
+num_classes = 15
 
 
 _base_ = [
@@ -23,7 +23,7 @@ _base_ = [
     # AdamW Optimizer
     "../_base_/schedules/adamw.py",
     # Linear Learning Rate Warmup with Subsequent Linear Decay
-    "../_base_/schedules/poly10warm.py",
+    "../_base_/schedules/poly10warm_med.py",
 ]
 
 model = dict(decode_head=dict(num_classes=num_classes))
@@ -49,10 +49,13 @@ data = dict(
     workers_per_gpu=2,
     train=dict(
         # Rare Class Sampling
-        rare_class_sampling=None,
-        # rare_class_sampling=dict(
-        #     min_pixels=4, class_temp=class_temp, min_crop_ratio=0.5, per_image=per_image
-        # )
+        # rare_class_sampling=None,
+        rare_class_sampling=dict(
+            min_pixels=4, 
+            class_temp=class_temp, 
+            min_crop_ratio=0.5, 
+            per_image=per_image
+        )
     ),
 )
 # Optimizer Hyperparameters

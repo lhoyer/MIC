@@ -5,13 +5,12 @@
 # ---------------------------------------------------------------
 
 # WMH datasets
-cluster="_euler"
 
 # dataset = "wmh_nuhs-umc"
 dataset = "wmh_umc-nuhs"
 
 # datatag = "_noph"
-datatag = "_noph_v2"
+datatag = "_noph_v2_euler"
 num_classes = 2
 
 # datatag = "_noph_bcg"
@@ -22,24 +21,27 @@ _base_ = [
     # DAFormer Network Architecture
     "../_base_/models/segformer_r101.py",
     # GTA->Cityscapes Data Loading
-    f"../_base_/datasets/uda_{dataset}_256x256{datatag}{cluster}.py",
+    f"../_base_/datasets/uda_{dataset}_256x256{datatag}.py",
     # Basic UDA Self-Training
     "../_base_/uda/dacs_colormix.py",
     # AdamW Optimizer
     "../_base_/schedules/adamw.py",
     # Linear Learning Rate Warmup with Subsequent Linear Decay
-    "../_base_/schedules/poly10warm.py",
+    "../_base_/schedules/poly10warm_med.py",
 ]
 
-burnin_global = 100
+burnin_global = 0
 burnin = 0
-uda = dict(color_mix=dict(freq=1.0, burnin_global=burnin_global, 
-                          suppress_bg=True, burnin=burnin, 
-                          coloraug=True, gaussian_blur=False, 
-                          auto_bcg=False))
+uda = dict(
+    color_mix=dict(
+        burnin_global=burnin_global,
+        burnin=burnin,
+        coloraug=False,
+        auto_bcg=False,
+    )
+)
 
 norm_net = dict(norm_activation="linear", layers=[1, 1])
-# norm_net = dict(norm_activation="relu", layers=[1, 32, 1])
 
 model = dict(
     decode_head=dict(num_classes=num_classes),
@@ -56,7 +58,7 @@ data = dict(
     train=dict(
         # Rare Class Sampling
         rare_class_sampling=dict(
-            min_pixels=2, class_temp=class_temp, min_crop_ratio=0.5, per_image=per_image
+            min_pixels=16, class_temp=class_temp, min_crop_ratio=0.5, per_image=per_image
         )
     ),
 )
@@ -75,19 +77,18 @@ optimizer = dict(
 )
 
 n_gpus = 1
-runner = dict(type="IterBasedRunner", max_iters=30000)
+runner = dict(type="IterBasedRunner", max_iters=10000)
 # Logging Configuration
 checkpoint_config = dict(by_epoch=False, interval=1000, max_keep_ckpts=1)
 evaluation = dict(interval=500, metric="mDice")
 # Meta Information for Result Analysis
 
 exp = "basic"
-name_dataset = f"{dataset}{datatag}{cluster}"
+name_dataset = f"{dataset}{datatag}"
 name_architecture = "segformer_r101"
 name_encoder = "ResNetV1c"
 name_decoder = "SegFormerHead"
 name_uda = "dacs"
 name_opt = "adamw_6e-05_pmTrue_poly10warm_1x2_10k"
 
-blur = '-blur' if uda["color_mix"]["gaussian_blur"] else ""
-name = f"{dataset}{datatag}_{name_architecture}-burnin{burnin}-g{burnin_global}{blur}"
+name = f"{dataset}{datatag}_{name_architecture}-burnin{burnin}-g{burnin_global}"
