@@ -4,39 +4,35 @@
 # Licensed under the Apache License, Version 2.0
 # ---------------------------------------------------------------
 
-# WMH datasets
-cluster="_euler"
-
-# dataset = "wmh_nuhs-umc"
-dataset = "wmh_umc-nuhs"
-
-# datatag = "_noph"
-datatag = "_noph_v2"
-num_classes = 2
-
-# datatag = "_noph_bcg"
-# num_classes = 3
+datatag = ""
+datatag = "_euler_v2"
+dataset = 'brain_hcp1-hcp2'
+num_classes=15
 
 _base_ = [
     "../_base_/default_runtime.py",
     # DAFormer Network Architecture
     "../_base_/models/segformer_r101.py",
     # GTA->Cityscapes Data Loading
-    f"../_base_/datasets/uda_{dataset}_256x256{datatag}{cluster}.py",
+    f"../_base_/datasets/uda_{dataset}_256x256{datatag}.py",
     # Basic UDA Self-Training
     "../_base_/uda/dacs_colormix.py",
     # AdamW Optimizer
     "../_base_/schedules/adamw.py",
     # Linear Learning Rate Warmup with Subsequent Linear Decay
-    "../_base_/schedules/poly10warm.py",
+    "../_base_/schedules/poly10warm_med.py",
 ]
 
-burnin_global = 0
+burnin_global = 1000
 burnin = 0
-uda = dict(color_mix=dict(freq=1.0, burnin_global=burnin_global, 
-                          suppress_bg=True, burnin=burnin, 
-                          coloraug=False, gaussian_blur=False,
-                          auto_bcg=True))
+uda = dict(
+    color_mix=dict(
+        burnin_global=burnin_global,
+        burnin=burnin,
+        coloraug=True,
+        auto_bcg=False,
+    )
+)
 
 norm_net = dict(norm_activation="linear", layers=[1, 1])
 # norm_net = dict(norm_activation="relu", layers=[1, 32, 1])
@@ -56,7 +52,7 @@ data = dict(
     train=dict(
         # Rare Class Sampling
         rare_class_sampling=dict(
-            min_pixels=2, class_temp=class_temp, min_crop_ratio=0.5, per_image=per_image
+            min_pixels=4, class_temp=class_temp, min_crop_ratio=0.5, per_image=per_image
         )
     ),
 )
@@ -77,17 +73,16 @@ optimizer = dict(
 n_gpus = 1
 runner = dict(type="IterBasedRunner", max_iters=10000)
 # Logging Configuration
-checkpoint_config = dict(by_epoch=False, interval=1000, max_keep_ckpts=1)
-evaluation = dict(interval=500, metric="mDice")
+checkpoint_config = dict(by_epoch=False, interval=5000, max_keep_ckpts=1)
+evaluation = dict(interval=1000, metric="mDice")
 # Meta Information for Result Analysis
 
+norm = f"{norm_net['norm_activation']}"
 exp = "basic"
-name_dataset = f"{dataset}{datatag}{cluster}"
+name_dataset = f"{dataset}{datatag}"
 name_architecture = "segformer_r101"
 name_encoder = "ResNetV1c"
 name_decoder = "SegFormerHead"
 name_uda = "dacs"
 name_opt = "adamw_6e-05_pmTrue_poly10warm_1x2_10k"
-
-blur = '-blur' if uda["color_mix"]["gaussian_blur"] else ""
-name = f"{dataset}{datatag}_{name_architecture}-burnin{burnin}-g{burnin_global}{blur}"
+name = f"{dataset}{datatag}_{name_architecture}_{norm}-burnin{burnin}-NM"
