@@ -4,12 +4,11 @@
 # Licensed under the Apache License, Version 2.0
 # ---------------------------------------------------------------
 
-
 datatag = ""
-datatag = "_euler_v2"
-# datatag = "_v2"
-dataset = "brain_hcp1-gan-hcp2"
-num_classes = 15
+# datatag = "_euler"
+dataset = "spine_ct-dual-mri"
+# dataset = "spine_mri-ct"
+num_classes = 6
 
 
 _base_ = [
@@ -49,13 +48,10 @@ data = dict(
     workers_per_gpu=2,
     train=dict(
         # Rare Class Sampling
-        # rare_class_sampling=None,
-        rare_class_sampling=dict(
-            min_pixels=4, 
-            class_temp=class_temp, 
-            min_crop_ratio=0.5, 
-            per_image=per_image
-        )
+        rare_class_sampling=None,
+        # rare_class_sampling=dict(
+        #     min_pixels=4, class_temp=class_temp, min_crop_ratio=0.5, per_image=per_image
+        # )
     ),
 )
 # Optimizer Hyperparameters
@@ -74,7 +70,7 @@ optimizer = dict(
 n_gpus = 1
 runner = dict(type="IterBasedRunner", max_iters=10000)
 # Logging Configuration
-checkpoint_config = dict(by_epoch=False, interval=1000, max_keep_ckpts=1)
+checkpoint_config = dict(by_epoch=False, interval=5000, max_keep_ckpts=1)
 evaluation = dict(interval=1000, metric="mDice")
 
 # Meta Information for Result Analysis
@@ -84,5 +80,5 @@ name_architecture = "segformer_r101"
 name_encoder = "ResNetV1c"
 name_decoder = "SegFormerHead"
 name_uda = "dacs"
-name_opt = "adamw_6e-05_pmTrue_poly10warm_1x2_10k"
+name_opt = "adamw_6e-05_pmTrue_poly10warm_1x2_30k"
 name = f"{dataset}{datatag}_{name_architecture}"

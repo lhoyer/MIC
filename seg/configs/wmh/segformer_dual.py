@@ -4,13 +4,9 @@
 # Licensed under the Apache License, Version 2.0
 # ---------------------------------------------------------------
 
-
-datatag = ""
-datatag = "_euler_v2"
-# datatag = "_v2"
-dataset = "brain_hcp1-gan-hcp2"
-num_classes = 15
-
+datatag = "_noph_v2"
+dataset = "wmh_umc-dual-nuhs"
+num_classes = 2
 
 _base_ = [
     "../_base_/default_runtime.py",
@@ -33,11 +29,6 @@ seed = 0
 uda = dict(
     # Increased Alpha
     alpha=0.999,
-    # Thing-Class Feature Distance
-    # imnet_feature_dist_lambda=0.005,
-    # imnet_feature_dist_classes=[6, 7, 11, 12, 13, 14, 15, 16, 17, 18],
-    # imnet_feature_dist_scale_min_ratio=0.75,
-    # Pseudo-Label Crop
     pseudo_weight_ignore_top=0,
     pseudo_weight_ignore_bottom=0,
 )
@@ -49,9 +40,8 @@ data = dict(
     workers_per_gpu=2,
     train=dict(
         # Rare Class Sampling
-        # rare_class_sampling=None,
         rare_class_sampling=dict(
-            min_pixels=4, 
+            min_pixels=16, 
             class_temp=class_temp, 
             min_crop_ratio=0.5, 
             per_image=per_image
@@ -74,7 +64,7 @@ optimizer = dict(
 n_gpus = 1
 runner = dict(type="IterBasedRunner", max_iters=10000)
 # Logging Configuration
-checkpoint_config = dict(by_epoch=False, interval=1000, max_keep_ckpts=1)
+checkpoint_config = dict(by_epoch=False, interval=5000, max_keep_ckpts=1)
 evaluation = dict(interval=1000, metric="mDice")
 
 # Meta Information for Result Analysis

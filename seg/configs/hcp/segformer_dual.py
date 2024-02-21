@@ -6,9 +6,9 @@
 
 
 datatag = ""
-datatag = "_euler_v2"
+datatag = "_v2"
 # datatag = "_v2"
-dataset = "brain_hcp1-gan-hcp2"
+dataset = "brain_hcp1-dual-hcp2"
 num_classes = 15
 
 
@@ -31,13 +31,7 @@ model = dict(decode_head=dict(num_classes=num_classes))
 seed = 0
 # Modifications to Basic UDA
 uda = dict(
-    # Increased Alpha
     alpha=0.999,
-    # Thing-Class Feature Distance
-    # imnet_feature_dist_lambda=0.005,
-    # imnet_feature_dist_classes=[6, 7, 11, 12, 13, 14, 15, 16, 17, 18],
-    # imnet_feature_dist_scale_min_ratio=0.75,
-    # Pseudo-Label Crop
     pseudo_weight_ignore_top=0,
     pseudo_weight_ignore_bottom=0,
 )
