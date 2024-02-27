@@ -58,11 +58,13 @@ def get_class_stats(path, split = 'train'):
 
 
 
-path = '/itet-stor/klanna/bmicdatasets_bmicnas02/Sharing/klanna/da_data/lumbarspine/'
+# path = '/itet-stor/klanna/bmicdatasets_bmicnas02/Sharing/klanna/da_data/lumbarspine/'
 # get_class_stats(f'{path}/MRSpineSegV/')
-get_class_stats(f'{path}/VerSe-dual/')
+# get_class_stats(f'{path}/VerSe-dual/')
 
 
-# path = '/itet-stor/klanna/bmicdatasets_bmicnas02/Sharing/klanna/da_data/brain/'
+path = '/itet-stor/klanna/bmicdatasets_bmicnas02/Sharing/klanna/da_data/brain/'
+# get_class_stats(f'{path}/hcp1-gan/')
+get_class_stats(f'{path}/abide_caltech-gan/')
 # get_class_stats(f'{path}/hcp1-dual/')
 # get_class_stats(f'{path}/umc-dual/')

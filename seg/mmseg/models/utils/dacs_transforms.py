@@ -109,9 +109,9 @@ class ClasswiseMultAugmenter:
 
         renorm_(data_, mean, std)
         if self.auto_bcg:
-            return data_[:, 0, :, :].unsqueeze(1), background_mask.unsqueeze(1)
+            return data_, background_mask.unsqueeze(1)
         else:
-            return data_[:, 0, :, :].unsqueeze(1), None
+            return data_, None
 
     def find_background(self, img):
         img.clamp_(0, 1)

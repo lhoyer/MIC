@@ -31,7 +31,7 @@ _base_ = [
 ]
 
 burnin_global = 0
-burnin = 0
+burnin = -1
 uda = dict(
     color_mix=dict(
         burnin_global=burnin_global,

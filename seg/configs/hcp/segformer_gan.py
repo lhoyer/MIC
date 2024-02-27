@@ -6,7 +6,7 @@
 
 
 datatag = ""
-datatag = "_euler_v2"
+datatag = "_v2"
 # datatag = "_v2"
 dataset = "brain_hcp1-gan-hcp2"
 num_classes = 15

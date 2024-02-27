@@ -351,6 +351,7 @@ class DACS(UDADecorator):
         img_segm_hist, auto_bcg = self.contrast_flip.color_mix(
             img_original, gt_semantic_seg, means, stds
         )
+        img_segm_hist_gray = img_segm_hist[:, 0, :, :].clone().unsqueeze(1)
 
         # update normalization net
         norm_net = self.get_model().normalization_net
@@ -365,10 +366,10 @@ class DACS(UDADecorator):
                 background_mask = auto_bcg == 0
 
             norm_loss = self.criterion(
-                img_polished[foreground_mask], img_segm_hist[foreground_mask]
+                img_polished[foreground_mask], img_segm_hist_gray[foreground_mask]
             )
         else:
-            norm_loss = self.criterion(img_polished, img_segm_hist)
+            norm_loss = self.criterion(img_polished, img_segm_hist_gray)
 
         norm_loss.backward(retain_graph=False)
 
@@ -383,11 +384,15 @@ class DACS(UDADecorator):
             img = img_polished.detach().clone()
 
             if self.color_mix["suppress_bg"]:
-                img[background_mask] = img_segm_hist[background_mask]
+                img[background_mask] = img_segm_hist_gray[background_mask]
 
             img = img.repeat(1, 3, 1, 1)
+            denorm_(img, means, stds)
+            img = img[:, 0, :, :].unsqueeze(1)
+            img = img.repeat(1, 3, 1, 1)
+            renorm_(img, means, stds)
         elif random.uniform(0, 1) < 0.5:
-            img = img_segm_hist.repeat(1, 3, 1, 1)
+            img = img_segm_hist
         else:
             img = img_original
 
