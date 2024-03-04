@@ -13,6 +13,8 @@ uda = dict(
         "type": "source",
         "burnin_global": 0,
         "freq": 1.0,
+        "weight": 1.0,
+        "bias": 0.0,
         "suppress_bg": True,
         "norm_type": "linear",
         "burnin": -1,
@@ -26,5 +28,6 @@ uda = dict(
     },
     pseudo_weight_ignore_top=0,
     pseudo_weight_ignore_bottom=0,
+    debug_img_interval=100,
 )
 use_ddp_wrapper = True

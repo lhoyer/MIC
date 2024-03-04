@@ -6,7 +6,8 @@
 
 # WMH datasets
 datatag = ""
-datatag = "_euler_v2"
+# datatag = "_euler_v2"
+datatag = "_v2_flip"
 dataset = 'brain_hcp1-hcp2'
 num_classes=15
 
@@ -15,7 +16,7 @@ _base_ = [
     # DAFormer Network Architecture
     "../_base_/models/segformer_r101.py",
     # GTA->Cityscapes Data Loading
-    f"../_base_/datasets/uda_{dataset}_256x256{datatag}.py",
+    f"../_base_/datasets/hcp/uda_{dataset}_256x256{datatag}.py",
     # Basic UDA Self-Training
     "../_base_/uda/dacs.py",
     # AdamW Optimizer
@@ -43,7 +44,7 @@ uda = dict(
 class_temp = 0.1
 per_image = False
 data = dict(
-    samples_per_gpu=4,
+    samples_per_gpu=8,
     workers_per_gpu=2,
     train=dict(
         # Rare Class Sampling
@@ -55,7 +56,7 @@ data = dict(
 # Optimizer Hyperparameters
 optimizer_config = None
 optimizer = dict(
-    lr=6e-05,
+    lr=6e-04,
     paramwise_cfg=dict(
         custom_keys=dict(
             head=dict(lr_mult=10.0),

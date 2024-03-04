@@ -27,7 +27,13 @@ class RBFActivation(nn.Module):
 
 
 class NormNet(nn.Module):
-    def __init__(self, norm_activation: str = "sigmoid", layers: List[int] = [1, 1]):
+    def __init__(
+        self,
+        coef: float = 1.0,
+        bias: float = 0.0,
+        norm_activation: str = "sigmoid",
+        layers: List[int] = [1, 1],
+    ):
         super(NormNet, self).__init__()
         print("".join(["-"] * 80))
         print("Normalization network")
@@ -63,17 +69,27 @@ class NormNet(nn.Module):
         print(self.norm_layers)
         print("".join(["-"] * 80))
 
-        # self.initialize_weights()
+        self.initialize_weights(coef, bias)
 
     def forward(self, images: torch.Tensor) -> torch.Tensor:
         return self.norm_layers(images)
 
-    def initialize_weights(self) -> None:
+    def initialize_weights(self, coef, bias) -> None:
         for m in self.norm_layers.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.xavier_uniform_(m.weight)
+                nn.init.constant_(m.weight, coef)
                 if m.bias is not None:
-                    nn.init.constant_(m.bias, 0)
+                    nn.init.constant_(m.bias, bias)
             elif isinstance(m, nn.Linear):
                 nn.init.xavier_uniform_(m.weight)
                 nn.init.constant_(m.bias, 0)
+
+    # def initialize_weights(self) -> None:
+    #     for m in self.norm_layers.modules():
+    #         if isinstance(m, nn.Conv2d):
+    #             nn.init.xavier_uniform_(m.weight)
+    #             if m.bias is not None:
+    #                 nn.init.constant_(m.bias, 0)
+    #         elif isinstance(m, nn.Linear):
+    #             nn.init.xavier_uniform_(m.weight)
+    #             nn.init.constant_(m.bias, 0)

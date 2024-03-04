@@ -30,7 +30,7 @@ WORKPATH=/usr/bmicnas02/data-biwi-01/klanna_data/results/MIC/
 
 # python run_experiments.py --config configs/brain/segformer_colormix_source.py
 
-python run_experiments.py --config configs/wmh/segformer_colormix_tinto.py
+# python run_experiments.py --config configs/wmh/segformer_colormix_tinto.py
 
 # python run_experiments.py --config configs/spine/segformer_src.py
 

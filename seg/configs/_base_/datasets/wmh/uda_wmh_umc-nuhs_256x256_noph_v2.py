@@ -17,16 +17,10 @@ source_train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations'),
     dict(type='Resize', img_scale=img_scale),
-    # dict(type='ContrastFlip', data_aug_ratio=1.0),  
-    # dict(type='CLAHE'),
     dict(type='ElasticTransformation', data_aug_ratio=0.25),  
     dict(type='StructuralAug', data_aug_ratio=0.25),
-    # dict(type='MedPhotoMetricDistortion', data_aug_ratio=0.25),
-    # dict(type='RandomCrop', crop_size=crop_size, cat_max_ratio=0.75),
     dict(type='RandomFlip', prob=0.0),
-    # dict(type='PhotoMetricDistortion'),  # is applied later in dacs.py
     dict(type='Normalize', **img_norm_cfg),
-    # dict(type='Pad', size=crop_size, pad_val=0, seg_pad_val=0),
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_semantic_seg']),
 ]
@@ -36,10 +30,7 @@ target_train_pipeline = [
     dict(type='Resize', img_scale=img_scale),
     dict(type='ElasticTransformation', data_aug_ratio=0.25),
     dict(type='StructuralAug', data_aug_ratio=0.25),
-    # dict(type='RandomCrop', crop_size=crop_size),
     dict(type='RandomFlip', prob=0.0),
-    # dict(type='MedPhotoMetricDistortion', data_aug_ratio=0.25),
-    # dict(type='PhotoMetricDistortion'),  # is applied later in dacs.py
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size=crop_size, pad_val=0, seg_pad_val=0),
     dict(type='DefaultFormatBundle'),
@@ -50,9 +41,6 @@ test_pipeline = [
     dict(
         type='MultiScaleFlipAug',
         img_scale=(256, 256),
-        # MultiScaleFlipAug is disabled by not providing img_ratios and
-        # setting flip=False
-        # img_ratios=[0.5, 0.75, 1.0, 1.25, 1.5, 1.75],
         flip=False,
         transforms=[
             dict(type='Resize', keep_ratio=True),

@@ -5,7 +5,8 @@
 # ---------------------------------------------------------------
 
 # datatag = ""
-datatag = "_euler"
+# datatag = "_euler"
+datatag = "_flip"
 dataset = "spine_ct-mri"
 # dataset = "spine_mri-ct"
 num_classes = 6
@@ -15,7 +16,7 @@ _base_ = [
     # DAFormer Network Architecture
     "../_base_/models/segformer_r101.py",
     # GTA->Cityscapes Data Loading
-    f"../_base_/datasets/uda_{dataset}_256x256{datatag}.py",
+    f"../_base_/datasets/spine/uda_{dataset}_256x256{datatag}.py",
     # Basic UDA Self-Training
     "../_base_/uda/dacs.py",
     # AdamW Optimizer

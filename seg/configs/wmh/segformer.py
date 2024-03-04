@@ -6,7 +6,8 @@
 
 # WMH datasets
 datatag = ""
-datatag = "_noph_v2_euler"
+# datatag = "_noph_v2_euler"
+datatag = "_noph_v2_flip"
 # datatag = "_euler"
 # dataset = "wmh_nuhs-umc"
 dataset = "wmh_umc-nuhs"
@@ -17,7 +18,7 @@ _base_ = [
     # DAFormer Network Architecture
     "../_base_/models/segformer_r101.py",
     # GTA->Cityscapes Data Loading
-    f"../_base_/datasets/uda_{dataset}_256x256{datatag}.py",
+    f"../_base_/datasets/wmh/uda_{dataset}_256x256{datatag}.py",
     # Basic UDA Self-Training
     "../_base_/uda/dacs.py",
     # AdamW Optimizer

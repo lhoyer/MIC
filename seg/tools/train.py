@@ -73,6 +73,7 @@ def parse_args(args):
 
 
 def main(args):
+    ts = time.time()
     args = parse_args(args)
 
     cfg = Config.fromfile(args.config)
@@ -214,6 +215,8 @@ def main(args):
     )
 
     wandb.finish()
+    total_time = time.time() - ts
+    print(f"Total time: {total_time/60:2f} min")
 
 
 if __name__ == "__main__":

@@ -8,26 +8,206 @@ import torch
 import torch.nn as nn
 from torch import nn, optim
 import cv2
+from sklearn.linear_model import LinearRegression
+from mmseg.models.utils.dacs_normalization import NormNet
 
 
 class ClasswiseMultAugmenter:
     def __init__(
         self,
         n_classes,
+        coef,
+        bias,
         suppress_bg: bool = True,
         auto_bcg: bool = False,
         device: str = "cuda:0",
-        kernel_size: int = 3
+        kernel_size: int = 3,
     ):
         self.n_classes = n_classes
         self.device = device
         self.source_mean = -torch.ones(n_classes, 1)
         self.target_mean = -torch.ones(n_classes, 1)
+        self.target_min = -torch.ones(n_classes, 1)
         self.coef = torch.zeros(n_classes, 3)
 
         self.suppress_bg = suppress_bg
         self.auto_bcg = auto_bcg
         self.kernel_size = (kernel_size, kernel_size)
+
+        self.learning_rate = 0.0001
+        self.normalization_net = NormNet(
+            coef, bias, norm_activation="linear", layers=[1, 1]
+        ).to(device)
+        # nn.Conv2d(1, 1, kernel_size=1, bias=True).to(device)
+        self.criterion = nn.MSELoss()
+        self.optimizer = optim.Adam(
+            self.normalization_net.parameters(), lr=self.learning_rate, weight_decay=0
+        )
+
+        num_warmup_steps = 1000  # Number of warmup steps
+        num_total_steps = 10000  # Total number of training steps
+
+        # Lambda function for linear warmup
+        lambda1 = lambda step: float(step) / float(max(1, num_warmup_steps))
+        # Lambda function for constant learning rate after warmup
+        lambda2 = lambda step: 1.0 if step >= num_warmup_steps else 0.0
+
+        # Combine both lambda functions
+        lambda_lr = lambda step: lambda1(step) + lambda2(step) * (
+            self.learning_rate - lambda1(step)
+        )
+
+        # Initialize the scheduler
+        # self.scheduler = torch.optim.lr_scheduler.LambdaLR(self.optimizer, lr_lambda=lambda_lr)
+
+        self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            self.optimizer,
+            num_total_steps,
+            eta_min=self.learning_rate / 100,
+            last_epoch=-1,
+            verbose="deprecated",
+        )
+
+        self.local_iter = 1
+
+        self.init_weights = True
+
+    def _linear_match_cost(self, source, template, mask, N=500):
+        source_vec = source.reshape(-1)
+        template_vec = template.reshape(-1)
+        mask_vec = mask.reshape(-1)
+
+        selected_src = self.source_mean[1:, 0]
+        selected_tmpl = self.target_mean[1:, 0]
+
+        print(selected_src)
+        print(selected_tmpl)
+
+        idx = np.where(selected_tmpl != -1)[0]
+        print(len(idx), selected_tmpl.shape[0])
+        selected_src = selected_src[idx]
+        selected_tmpl = selected_tmpl[idx]
+
+        # selected_src = []
+        # selected_tmpl = []
+        # for cl in range(1, self.n_classes):
+        #     idx_class = np.where(mask_vec == cl)[0]
+        #     print(cl, len(idx_class))
+        #     if len(idx_class) > N:
+        #         idx_class = np.random.choice(idx_class, size=N, replace=False)
+
+        #     if len(idx_class):
+        #         selected_src.append(source_vec[idx_class])
+        #         selected_tmpl.append(template_vec[idx_class])
+        # # selected_src = np.array(selected_src)
+        # # selected_tmpl = np.array(selected_tmpl)
+        # selected_src = np.concatenate(selected_src)
+        # selected_tmpl = np.concatenate(selected_tmpl)
+
+        print(selected_src)
+        print(selected_tmpl)
+        # reg = LinearRegression().fit(source_vec[mask_vec != 0].reshape(-1, 1), template_vec[mask_vec != 0])
+        reg = LinearRegression().fit(selected_src.reshape(-1, 1), selected_tmpl)
+        print(
+            f"Linear Regression: Coefficients={reg.coef_[0]:.4f} and Intercept={reg.intercept_:.4f}"
+        )
+
+        self.normalization_net.initialize_weights(reg.coef_[0], reg.intercept_)
+
+        for name, param in self.normalization_net.named_parameters():
+            print(name, param.data.item())
+
+        self.init_weights = False
+
+    def optimization_step(
+        self, img_original, img_segm_hist, gt_semantic_seg, means, stds, auto_bcg=None
+    ):
+        denorm_(img_original, means, stds)
+        denorm_(img_segm_hist, means, stds)
+
+        img_segm_hist_gray = img_segm_hist[:, 0, :, :].clone().unsqueeze(1)
+        img_original_gray = img_original[:, 0, :, :].unsqueeze(1)
+
+        # if self.init_weights:
+        #     self._linear_match_cost(img_original_gray[:, 0].cpu().numpy(),
+        #                             img_segm_hist_gray[:, 0].cpu().numpy(),
+        #                             gt_semantic_seg[:, 0].cpu().numpy())
+        # for i in range(img_original_gray.shape[0]):
+        #     self._linear_match_cost(img_original_gray[i, 0].cpu().numpy(),
+        #                             img_segm_hist_gray[i, 0].cpu().numpy(),
+        #                             gt_semantic_seg[i, 0].cpu().numpy())
+
+        self.optimizer.zero_grad()
+        # print(img_original.device, img_segm_hist.device, gt_semantic_seg.device)
+        # print(next(self.normalization_net.parameters()).device)
+        # quit()
+
+        img_polished = self.normalization_net(img_original_gray)
+
+        if self.suppress_bg:
+            ## automatically detect background value
+            # background_val = img_original[0, 0, 0, 0].item()
+            # foreground_mask = img_original[:, 0, :, :].unsqueeze(1) > 0
+            # background_mask = img_original[:, 0, :, :].unsqueeze(1) == background_val
+            if auto_bcg is None:
+                foreground_mask = gt_semantic_seg > 0
+                background_mask = gt_semantic_seg == 0
+            else:
+                foreground_mask = auto_bcg > 0
+                background_mask = auto_bcg == 0
+
+            loss = self.criterion(
+                img_polished[foreground_mask],
+                img_segm_hist_gray[foreground_mask].to(img_polished.device),
+            )
+        else:
+            loss = self.criterion(
+                img_polished, img_segm_hist_gray.to(img_polished.device)
+            )
+
+        # print(img_segm_hist_gray[foreground_mask].min().item(), img_segm_hist_gray[foreground_mask].max().item(),
+        #       img_polished[foreground_mask].min().item(), img_polished[foreground_mask].max().item(),
+        #       img_original_gray[foreground_mask].min().item(), img_original_gray[foreground_mask].max().item())
+
+        loss.backward()
+        self.optimizer.step()
+        self.scheduler.step()
+
+        # target_min = self.target_min[1:]
+        # target_min = target_min[target_min > 0]
+        # if target_min.shape[0] != 0:
+        #     min_tgt = target_min.min().item()
+        # else:
+        min_tgt = img_segm_hist_gray[foreground_mask].min().item()
+
+        # img = img_polished.detach()
+        del img_polished
+        with torch.no_grad():
+            img = self.normalization_net(img_original_gray).detach()
+
+        if self.suppress_bg:
+            img[background_mask] = img_segm_hist_gray[background_mask]
+            # img[background_mask] = img_original[:, 0, :, :].unsqueeze(1)[background_mask].mean().item()
+
+        # img[foreground_mask] += min_tgt - img[foreground_mask].min().item()
+
+        # print(img_segm_hist_gray[foreground_mask].min().item(), img_segm_hist_gray[foreground_mask].max().item(),
+        #       img[foreground_mask].min().item(), img[foreground_mask].max().item(),
+        #       img_original_gray[foreground_mask].min().item(), img_original_gray[foreground_mask].max().item())
+
+        # quit()
+        img = img.repeat(1, 3, 1, 1)
+        # denorm_(img, means, stds)
+        # img = img[:, 0, :, :].unsqueeze(1)
+        # img = img.repeat(1, 3, 1, 1)
+        # renorm_(img, means, stds)
+        # self.local_iter += 1
+
+        renorm_(img_original, means, stds)
+        renorm_(img_segm_hist, means, stds)
+        renorm_(img, means, stds)
+
+        return img, loss.item()
 
     def update(self, source, target, mask_src, mask_tgt, weight_tgt, param):
         mean, std = param["mean"], param["std"]
@@ -67,6 +247,7 @@ class ClasswiseMultAugmenter:
 
             if target_mean.shape[0] != 0:
                 self.target_mean[i, c] = target_mean.mean().item()
+                self.target_min[i, c] = target_mean.min().item()
 
             if (self.source_mean[i, c] != -1) and (self.target_mean[i, c] != -1):
                 self.coef[i, c] = self.target_mean[i, c] - self.source_mean[i, c]
@@ -82,9 +263,7 @@ class ClasswiseMultAugmenter:
         if self.auto_bcg:
             background_mask = []
             for i in range(data_.shape[0]):
-                background_mask.append(
-                    self.find_background(data_[i])
-                )
+                background_mask.append(self.find_background(data_[i]))
             background_mask = torch.stack(background_mask).to(self.device)
 
         for i in range(self.n_classes):
@@ -123,9 +302,7 @@ class ClasswiseMultAugmenter:
         )
 
         # Apply thresholding to find markers
-        _, thresh = cv2.threshold(
-            gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU
-        )
+        _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
         # Noise removal using morphological closing operation
         kernel = np.ones(self.kernel_size, np.uint8)

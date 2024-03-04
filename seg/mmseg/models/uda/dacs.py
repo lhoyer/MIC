@@ -136,11 +136,14 @@ class DACS(UDADecorator):
 
             self.contrast_flip = ClasswiseMultAugmenter(
                 num_classes,
+                self.color_mix["weight"], 
+                self.color_mix["bias"],
                 suppress_bg=self.color_mix["suppress_bg"],
-                auto_bcg=self.color_mix["auto_bcg"]
+                auto_bcg=self.color_mix["auto_bcg"],
             )
             self.criterion = nn.MSELoss()
             self.color_mix_flag = False
+            self.debug_img_interval = 100
 
     def get_ema_model(self):
         return get_module(self.ema_model)
@@ -347,75 +350,31 @@ class DACS(UDADecorator):
 
     def intensity_normalization(self, img_original, gt_semantic_seg, means, stds):
         # estimate tgt intensities using GT segmenation masks
-
+        if np.random.rand() > self.color_mix["freq"]:
+            return img_original
+        
         img_segm_hist, auto_bcg = self.contrast_flip.color_mix(
             img_original, gt_semantic_seg, means, stds
         )
-        img_segm_hist_gray = img_segm_hist[:, 0, :, :].clone().unsqueeze(1)
 
-        # update normalization net
-        norm_net = self.get_model().normalization_net
-        img_polished = norm_net(img_original[:, 0, :, :].unsqueeze(1))
-
-        if self.color_mix["suppress_bg"]:
-            if auto_bcg is None:
-                foreground_mask = gt_semantic_seg > 0
-                background_mask = gt_semantic_seg == 0
-            else:
-                foreground_mask = auto_bcg > 0
-                background_mask = auto_bcg == 0
-
-            norm_loss = self.criterion(
-                img_polished[foreground_mask], img_segm_hist_gray[foreground_mask]
-            )
-        else:
-            norm_loss = self.criterion(img_polished, img_segm_hist_gray)
-
-        norm_loss.backward(retain_graph=False)
-
-        if norm_loss.item() < self.color_mix["burninthresh"]:
-            self.color_mix_flag = True
-        # self.color_mix_flag = norm_loss.item() < self.color_mix["burninthresh"]
-
-        if (
-            (self.local_iter >= self.color_mix["burnin"])
-            and (self.color_mix["burnin"] != -1)
-        ) or ((self.color_mix["burnin"] == -1) and self.color_mix_flag):
-            img = img_polished.detach().clone()
-
-            if self.color_mix["suppress_bg"]:
-                img[background_mask] = img_segm_hist_gray[background_mask]
-
-            img = img.repeat(1, 3, 1, 1)
-            denorm_(img, means, stds)
-            img = img[:, 0, :, :].unsqueeze(1)
-            img = img.repeat(1, 3, 1, 1)
-            renorm_(img, means, stds)
-        elif random.uniform(0, 1) < 0.5:
+        if self.local_iter < self.color_mix["burnin_global"]:
             img = img_segm_hist
+            norm_loss = np.nan
         else:
-            img = img_original
-
-        del img_polished
-
-        if self.local_iter % 500 == 0:
-            for i in range(self.contrast_flip.n_classes):
-                wandb.log(
-                    {f"Class_{i+1} src": self.contrast_flip.source_mean[i, 0].item()},
-                    step=self.local_iter + 1,
-                )
-                wandb.log(
-                    {f"Class_{i+1} tgt": self.contrast_flip.target_mean[i, 0].item()},
-                    step=self.local_iter + 1,
-                )
-
-            for name, param in norm_net.named_parameters():
-                wandb.log({name: param.data.item()}, step=self.local_iter + 1)
-
-            wandb.log({"loss": norm_loss.item()}, step=self.local_iter + 1)
-            wandb.log(
-                {"color_mix_flag": int(self.color_mix_flag)}, step=self.local_iter + 1
+            img, norm_loss = self.contrast_flip.optimization_step(
+                img_original, img_segm_hist, gt_semantic_seg, means, stds, auto_bcg
             )
+
+        if self.local_iter % 100 == 0:
+            if self.local_iter >= self.color_mix["burnin_global"]:
+                for name, param in self.contrast_flip.normalization_net.named_parameters():
+                    wandb.log({name: param.data.item()}, step=self.local_iter + 1)
+
+                wandb.log({"loss": norm_loss}, step=self.local_iter + 1)
+                wandb.log(
+                    {"norm-lr": self.contrast_flip.scheduler.get_last_lr()[0]},
+                    step=self.local_iter + 1,
+                )
 
             vis_img = (
                 torch.clamp(denorm(img_original, means, stds), 0, 1)
@@ -559,11 +518,8 @@ class DACS(UDADecorator):
         }
 
         img_original = img.clone()
-        if self.color_mix["type"] == "source":
-            if (np.random.rand() <= self.color_mix["freq"]) and (
-                self.local_iter >= self.color_mix["burnin_global"]
-            ):
-                img = self.intensity_normalization(img, gt_semantic_seg, means, stds)
+        if self.color_mix["type"] == "source":            
+            img = self.intensity_normalization(img, gt_semantic_seg, means, stds)
         elif self.color_mix["type"] == "fda":
             img = self.fda_normalization(img, target_img, means, stds)
 
@@ -624,9 +580,7 @@ class DACS(UDADecorator):
 
             mix_masks = get_class_masks(gt_semantic_seg)
 
-            if (self.color_mix["type"] == "source") and (
-                self.local_iter >= self.color_mix["burnin_global"]
-            ):
+            if self.color_mix["type"] == "source":
                 self.contrast_flip.update(
                     img_original,
                     target_img,
@@ -722,6 +676,9 @@ class DACS(UDADecorator):
             log_vars.update(masked_log_vars)
             masked_loss.backward()
 
+        if self.local_iter % 100 == 0:
+            WandbLogImages(seg_debug)
+
         if (
             self.local_iter % self.debug_img_interval == 0
             and not self.source_only
@@ -786,7 +743,6 @@ class DACS(UDADecorator):
                 )
                 plt.close()
 
-        WandbLogImages(seg_debug)
 
         if self.local_iter % self.debug_img_interval == 0:
             out_dir = os.path.join(self.train_cfg["work_dir"], "debug")
