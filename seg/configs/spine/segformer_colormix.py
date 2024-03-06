@@ -25,7 +25,7 @@ _base_ = [
     "../_base_/schedules/poly10warm_med.py",
 ]
 
-burnin_global = 100
+burnin_global = 0
 burnin = 0
 uda = dict(
     color_mix=dict(

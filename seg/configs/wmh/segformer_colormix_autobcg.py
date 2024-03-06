@@ -10,7 +10,7 @@
 dataset = "wmh_umc-nuhs"
 
 # datatag = "_noph"
-datatag = "_noph_v2_flip"
+datatag = "_noph_v2_flip_autobcg"
 num_classes = 2
 
 # datatag = "_noph_bcg"
@@ -30,14 +30,14 @@ _base_ = [
     "../_base_/schedules/poly10warm_med.py",
 ]
 
-burnin_global = 0
+burnin_global = 100
 burnin = 0
 uda = dict(
     color_mix=dict(
         burnin_global=burnin_global,
         burnin=burnin,
         coloraug=True,
-        auto_bcg=False,
+        auto_bcg=True,
     )
 )
 

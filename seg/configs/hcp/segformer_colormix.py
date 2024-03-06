@@ -36,12 +36,12 @@ uda = dict(
     debug_img_interval=5
 )
 
-# norm_net = dict(norm_activation="linear", layers=[1, 1])
+norm_net = dict(norm_activation="linear", layers=[1, 1])
 # norm_net = dict(norm_activation="relu", layers=[1, 32, 1])
 
 model = dict(
     decode_head=dict(num_classes=num_classes),
-    # norm_cfg=norm_net,
+    norm_cfg=norm_net,
 )
 
 seed = 0
