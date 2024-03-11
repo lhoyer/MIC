@@ -10,7 +10,7 @@
 dataset = "wmh_umc-nuhs"
 
 # datatag = "_noph"
-datatag = "_noph_v2_flip"
+datatag = "_noph_v2"
 num_classes = 2
 
 # datatag = "_noph_bcg"
@@ -31,21 +31,23 @@ _base_ = [
 ]
 
 burnin_global = 0
-burnin = 0
+burnin = 500
 uda = dict(
     color_mix=dict(
         burnin_global=burnin_global,
         burnin=burnin,
         coloraug=True,
         auto_bcg=False,
+        bias=0.54947, 
+        weight=0.0055
     )
 )
 
-norm_net = dict(norm_activation="linear", layers=[1, 1])
+# norm_net = dict(norm_activation="linear", layers=[1, 1])
 
 model = dict(
     decode_head=dict(num_classes=num_classes),
-    norm_cfg=norm_net,
+    # norm_cfg=norm_net,
 )
 
 seed = 0

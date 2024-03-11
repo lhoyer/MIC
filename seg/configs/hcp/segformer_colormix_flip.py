@@ -5,7 +5,7 @@
 # ---------------------------------------------------------------
 
 datatag = ""
-datatag = "_v2"
+datatag = "_v2_flip"
 dataset = 'brain_hcp1-hcp2'
 num_classes=15
 
@@ -24,7 +24,7 @@ _base_ = [
 ]
 
 burnin_global = 0
-burnin = 500
+burnin = 0
 uda = dict(
     color_mix=dict(
         burnin_global=burnin_global,
@@ -32,8 +32,8 @@ uda = dict(
         coloraug=True,
         gaussian_blur=False,
         auto_bcg=False,
-        bias=1.09021,
-        weight=-0.78673
+        bias=0.0,
+        weight=1.0
     ),
     debug_img_interval=5
 )

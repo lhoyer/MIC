@@ -11,6 +11,20 @@ import cv2
 from sklearn.linear_model import LinearRegression
 from mmseg.models.utils.dacs_normalization import NormNet
 
+def cosine_annealing(
+    step: int, total_steps: int, lr_max: float, lr_min: float, warmup_steps: int = 0
+) -> float:
+    assert warmup_steps >= 0
+
+    if step < warmup_steps:
+        lr = lr_max * step / warmup_steps
+    else:
+        lr = lr_min + (lr_max - lr_min) * 0.5 * (
+            1 + np.cos((step - warmup_steps) / (total_steps - warmup_steps) * np.pi)
+        )
+
+    return lr
+
 
 class ClasswiseMultAugmenter:
     def __init__(
@@ -22,6 +36,8 @@ class ClasswiseMultAugmenter:
         auto_bcg: bool = False,
         device: str = "cuda:0",
         kernel_size: int = 3,
+        total_steps: int = 10000,
+        warm_up_iters: int = 1000
     ):
         self.n_classes = n_classes
         self.device = device
@@ -44,33 +60,42 @@ class ClasswiseMultAugmenter:
             self.normalization_net.parameters(), lr=self.learning_rate, weight_decay=0
         )
 
-        num_warmup_steps = 1000  # Number of warmup steps
-        num_total_steps = 10000  # Total number of training steps
+        # num_warmup_steps = 1000  # Number of warmup steps
+        # num_total_steps = 10000  # Total number of training steps
 
-        # Lambda function for linear warmup
-        lambda1 = lambda step: float(step) / float(max(1, num_warmup_steps))
-        # Lambda function for constant learning rate after warmup
-        lambda2 = lambda step: 1.0 if step >= num_warmup_steps else 0.0
+        # # Lambda function for linear warmup
+        # lambda1 = lambda step: float(step) / float(max(1, num_warmup_steps))
+        # # Lambda function for constant learning rate after warmup
+        # lambda2 = lambda step: 1.0 if step >= num_warmup_steps else 1e-6
 
-        # Combine both lambda functions
-        lambda_lr = lambda step: lambda1(step) + lambda2(step) * (
-            self.learning_rate - lambda1(step)
-        )
+        # # Combine both lambda functions
+        # lambda_lr = lambda step: lambda1(step) + lambda2(step) * (
+        #     self.learning_rate - lambda1(step)
+        # )
 
         # Initialize the scheduler
         # self.scheduler = torch.optim.lr_scheduler.LambdaLR(self.optimizer, lr_lambda=lambda_lr)
-
-        self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        
+        self.scheduler = torch.optim.lr_scheduler.LambdaLR(
             self.optimizer,
-            num_total_steps,
-            eta_min=self.learning_rate / 100,
-            last_epoch=-1,
-            verbose="deprecated",
+            lr_lambda=lambda step: cosine_annealing(
+                step,
+                total_steps,
+                1,  # since lr_lambda computes multiplicative factor
+                1e-6 / self.learning_rate,
+                warmup_steps=warm_up_iters,
+            ),
         )
+        
+        # self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        #     self.optimizer,
+        #     num_total_steps,
+        #     eta_min=self.learning_rate / 100,
+        #     last_epoch=-1,
+        #     verbose="deprecated",
+        # )
 
         self.local_iter = 1
-
-        self.init_weights = True
 
     def _linear_match_cost(self, source, template, mask, N=500):
         source_vec = source.reshape(-1)
@@ -120,7 +145,7 @@ class ClasswiseMultAugmenter:
         self.init_weights = False
 
     def optimization_step(
-        self, img_original, img_segm_hist, gt_semantic_seg, means, stds, auto_bcg=None
+        self, optimizer_step, img_original, img_segm_hist, gt_semantic_seg, means, stds, auto_bcg=None
     ):
         denorm_(img_original, means, stds)
         denorm_(img_segm_hist, means, stds)
@@ -128,86 +153,57 @@ class ClasswiseMultAugmenter:
         img_segm_hist_gray = img_segm_hist[:, 0, :, :].clone().unsqueeze(1)
         img_original_gray = img_original[:, 0, :, :].unsqueeze(1)
 
-        # if self.init_weights:
-        #     self._linear_match_cost(img_original_gray[:, 0].cpu().numpy(),
-        #                             img_segm_hist_gray[:, 0].cpu().numpy(),
-        #                             gt_semantic_seg[:, 0].cpu().numpy())
-        # for i in range(img_original_gray.shape[0]):
-        #     self._linear_match_cost(img_original_gray[i, 0].cpu().numpy(),
-        #                             img_segm_hist_gray[i, 0].cpu().numpy(),
-        #                             gt_semantic_seg[i, 0].cpu().numpy())
-
-        self.optimizer.zero_grad()
-        # print(img_original.device, img_segm_hist.device, gt_semantic_seg.device)
-        # print(next(self.normalization_net.parameters()).device)
-        # quit()
-
-        img_polished = self.normalization_net(img_original_gray)
-
-        if self.suppress_bg:
-            ## automatically detect background value
-            # background_val = img_original[0, 0, 0, 0].item()
-            # foreground_mask = img_original[:, 0, :, :].unsqueeze(1) > 0
-            # background_mask = img_original[:, 0, :, :].unsqueeze(1) == background_val
-            if auto_bcg is None:
-                foreground_mask = gt_semantic_seg > 0
-                background_mask = gt_semantic_seg == 0
-            else:
-                foreground_mask = auto_bcg > 0
-                background_mask = auto_bcg == 0
-
-            loss = self.criterion(
-                img_polished[foreground_mask],
-                img_segm_hist_gray[foreground_mask].to(img_polished.device),
-            )
+        if auto_bcg is None:
+            foreground_mask = gt_semantic_seg > 0
+            background_mask = gt_semantic_seg == 0
         else:
-            loss = self.criterion(
-                img_polished, img_segm_hist_gray.to(img_polished.device)
-            )
+            foreground_mask = auto_bcg > 0
+            background_mask = auto_bcg == 0
 
-        # print(img_segm_hist_gray[foreground_mask].min().item(), img_segm_hist_gray[foreground_mask].max().item(),
-        #       img_polished[foreground_mask].min().item(), img_polished[foreground_mask].max().item(),
-        #       img_original_gray[foreground_mask].min().item(), img_original_gray[foreground_mask].max().item())
+        if optimizer_step:
+            self.optimizer.zero_grad()
 
-        loss.backward()
-        self.optimizer.step()
-        self.scheduler.step()
+            img_polished = self.normalization_net(img_original_gray)
 
-        # target_min = self.target_min[1:]
-        # target_min = target_min[target_min > 0]
-        # if target_min.shape[0] != 0:
-        #     min_tgt = target_min.min().item()
-        # else:
-        min_tgt = img_segm_hist_gray[foreground_mask].min().item()
+            if self.suppress_bg:
 
-        # img = img_polished.detach()
-        del img_polished
+                loss = self.criterion(
+                    img_polished[foreground_mask],
+                    img_segm_hist_gray[foreground_mask].to(img_polished.device),
+                )
+            else:
+                loss = self.criterion(
+                    img_polished, img_segm_hist_gray.to(img_polished.device)
+                )
+
+            loss.backward()
+            self.optimizer.step()
+            self.scheduler.step()
+
+            loss_val = loss.item()
+
+            min_tgt = img_segm_hist_gray[foreground_mask].min().item()
+
+            del img_polished
+        
+        else:
+            loss_val = np.nan
+
         with torch.no_grad():
             img = self.normalization_net(img_original_gray).detach()
 
         if self.suppress_bg:
             img[background_mask] = img_segm_hist_gray[background_mask]
+            
             # img[background_mask] = img_original[:, 0, :, :].unsqueeze(1)[background_mask].mean().item()
 
-        # img[foreground_mask] += min_tgt - img[foreground_mask].min().item()
-
-        # print(img_segm_hist_gray[foreground_mask].min().item(), img_segm_hist_gray[foreground_mask].max().item(),
-        #       img[foreground_mask].min().item(), img[foreground_mask].max().item(),
-        #       img_original_gray[foreground_mask].min().item(), img_original_gray[foreground_mask].max().item())
-
-        # quit()
         img = img.repeat(1, 3, 1, 1)
-        # denorm_(img, means, stds)
-        # img = img[:, 0, :, :].unsqueeze(1)
-        # img = img.repeat(1, 3, 1, 1)
-        # renorm_(img, means, stds)
-        # self.local_iter += 1
 
         renorm_(img_original, means, stds)
         renorm_(img_segm_hist, means, stds)
         renorm_(img, means, stds)
 
-        return img, loss.item()
+        return img, loss_val
 
     def update(self, source, target, mask_src, mask_tgt, weight_tgt, param):
         mean, std = param["mean"], param["std"]

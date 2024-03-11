@@ -140,6 +140,7 @@ class DACS(UDADecorator):
                 self.color_mix["bias"],
                 suppress_bg=self.color_mix["suppress_bg"],
                 auto_bcg=self.color_mix["auto_bcg"],
+                total_steps=self.max_iters,
             )
             self.criterion = nn.MSELoss()
             self.color_mix_flag = False
@@ -361,8 +362,9 @@ class DACS(UDADecorator):
             img = img_segm_hist
             norm_loss = np.nan
         else:
+            optimizer_step = self.local_iter > self.color_mix["burnin"]
             img, norm_loss = self.contrast_flip.optimization_step(
-                img_original, img_segm_hist, gt_semantic_seg, means, stds, auto_bcg
+                optimizer_step, img_original, img_segm_hist, gt_semantic_seg, means, stds, auto_bcg
             )
 
         if self.local_iter % 100 == 0:

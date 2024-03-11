@@ -30,6 +30,7 @@ examples/
 wandb/
 LOGS/
 LOGS_TEST/
+LOGS_init/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
