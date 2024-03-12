@@ -6,7 +6,7 @@
 
 datatag = ""
 # datatag = "_euler"
-datatag = "_flip"
+datatag = ""
 dataset = "spine_ct-mri"
 # dataset = "spine_mri-ct"
 num_classes = 6
@@ -26,22 +26,25 @@ _base_ = [
 ]
 
 burnin_global = 0
-burnin = 0
+burnin = 500
 uda = dict(
     color_mix=dict(
         burnin_global=burnin_global,
         burnin=burnin,
         coloraug=True,
         auto_bcg=False,
+        bias=0.40618, 
+        weight=-0.30236,
+        extra_flip=False
     )
 )
 
-norm_net = dict(norm_activation="linear", layers=[1, 1])
+# norm_net = dict(norm_activation="linear", layers=[1, 1])
 # norm_net = dict(norm_activation="relu", layers=[1, 32, 1])
 
 model = dict(
     decode_head=dict(num_classes=num_classes),
-    norm_cfg=norm_net,
+    # norm_cfg=norm_net,
 )
 
 seed = 0
@@ -62,7 +65,7 @@ data = dict(
 # Optimizer Hyperparameters
 optimizer_config = None
 optimizer = dict(
-    lr=6e-04,
+    lr=6e-05,
     paramwise_cfg=dict(
         custom_keys=dict(
             head=dict(lr_mult=10.0),
@@ -76,7 +79,7 @@ n_gpus = 1
 runner = dict(type="IterBasedRunner", max_iters=10000)
 # Logging Configuration
 checkpoint_config = dict(by_epoch=False, interval=5000, max_keep_ckpts=1)
-evaluation = dict(interval=1000, metric="mDice")
+evaluation = dict(interval=250, metric="mDice")
 # Meta Information for Result Analysis
 
 
@@ -87,4 +90,6 @@ name_encoder = "ResNetV1c"
 name_decoder = "SegFormerHead"
 name_uda = "dacs"
 name_opt = "adamw_6e-05_pmTrue_poly10warm_1x2_30k"
-name = f"{dataset}{datatag}_{name_architecture}-burnin{burnin}-g{burnin_global}"
+extra_flip_flag = '-flip' if uda['color_mix']['extra_flip'] else ''
+
+name = f"{dataset}{datatag}_{name_architecture}-burnin{burnin}-g{burnin_global}{extra_flip_flag}"

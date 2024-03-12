@@ -37,7 +37,8 @@ class ClasswiseMultAugmenter:
         device: str = "cuda:0",
         kernel_size: int = 3,
         total_steps: int = 10000,
-        warm_up_iters: int = 1000
+        warm_up_iters: int = 1000,
+        extra_flip: bool = False
     ):
         self.n_classes = n_classes
         self.device = device
@@ -45,6 +46,7 @@ class ClasswiseMultAugmenter:
         self.target_mean = -torch.ones(n_classes, 1)
         self.target_min = -torch.ones(n_classes, 1)
         self.coef = torch.zeros(n_classes, 3)
+        self.extra_flip = extra_flip
 
         self.suppress_bg = suppress_bg
         self.auto_bcg = auto_bcg
@@ -144,6 +146,19 @@ class ClasswiseMultAugmenter:
 
         self.init_weights = False
 
+    def _normalize(self, img_original, background_mask):
+        img_original_gray = img_original[:, 0, :, :].unsqueeze(1)
+
+        with torch.no_grad():
+            img = self.normalization_net(img_original_gray).detach()
+
+        if self.suppress_bg:
+            img[background_mask] = img_original_gray[background_mask]
+
+        img = img.repeat(1, 3, 1, 1)
+
+        return img
+    
     def optimization_step(
         self, optimizer_step, img_original, img_segm_hist, gt_semantic_seg, means, stds, auto_bcg=None
     ):
@@ -220,11 +235,18 @@ class ClasswiseMultAugmenter:
             for i in range(target.shape[0]):
                 target_bcg.append(self.find_background(target[i]))
             target_bcg = torch.stack(target_bcg).to(self.device)
+        else:
+            source_bcg = mask_src == 0
+
+        if self.extra_flip:
+            source_ = self._normalize(source, source_bcg)
+        else:
+            source_ = source
 
         c = 0
         for i in range(self.n_classes):
             if self.auto_bcg:
-                source_mean = source[:, c, :, :][
+                source_mean = source_[:, c, :, :][
                     (mask_src.squeeze(1) == i) & (source_bcg != 0)
                 ]
                 target_mean = target[:, c, :, :][
@@ -233,7 +255,7 @@ class ClasswiseMultAugmenter:
                     & (weight_tgt.squeeze(1) > 0)
                 ]
             else:
-                source_mean = source[:, c, :, :][mask_src.squeeze(1) == i]
+                source_mean = source_[:, c, :, :][mask_src.squeeze(1) == i]
                 target_mean = target[:, c, :, :][
                     (mask_tgt.squeeze(1) == i) & (weight_tgt.squeeze(1) > 0)
                 ]
@@ -261,6 +283,11 @@ class ClasswiseMultAugmenter:
             for i in range(data_.shape[0]):
                 background_mask.append(self.find_background(data_[i]))
             background_mask = torch.stack(background_mask).to(self.device)
+        else:
+            background_mask = mask == 0
+
+        if self.extra_flip:
+            data_ = self._normalize(data_, background_mask)
 
         for i in range(self.n_classes):
             for c in range(3):

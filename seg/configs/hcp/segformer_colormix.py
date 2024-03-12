@@ -33,7 +33,8 @@ uda = dict(
         gaussian_blur=False,
         auto_bcg=False,
         bias=1.09021,
-        weight=-0.78673
+        weight=-0.78673,
+        extra_flip=True
     ),
     debug_img_interval=5
 )
@@ -89,4 +90,5 @@ name_encoder = "ResNetV1c"
 name_decoder = "SegFormerHead"
 name_uda = "dacs"
 name_opt = "adamw_6e-05_pmTrue_poly10warm_1x2_10k"
-name = f"{dataset}{datatag}_{name_architecture}-burnin{burnin}-g{burnin_global}"
+extra_flip_flag = '-flip' if uda['color_mix']['extra_flip'] else ''
+name = f"{dataset}{datatag}_{name_architecture}-burnin{burnin}-g{burnin_global}{extra_flip_flag}"
